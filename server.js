@@ -1,16 +1,11 @@
 //requires
 const express = require('express');
-const path = require('path');
 const bodyParser = require('body-parser');
 const {check, validationResult} = require('express-validator');
 const router = express.Router();
 const app = express();
 const constants = require('./includes/constants.js');
 const util = require('./includes/util');
-
-/*
- * Establish DB connection
- */
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
