@@ -8,61 +8,55 @@ module.exports = dbConn.define(constants.DB_TABLE_PREFIX + constants.DB_USERS_TA
         primaryKey: true,
         autoIncrement: true
     },
-    first_name: {
-        type: sequelize.STRING(60),
-        allowNull: false,
-        validate: {
-            isAlpha: true,
-            notNull: true
-        }
-    },
-    last_name: {
-        type: sequelize.STRING(60),
-        allowNull: false,
-        validate: {
-            isAlpha: true,
-            notNull: true
-        }
-    },
     user_name: {
         type: sequelize.STRING(60),
-        unique: true,
+        unique: { val: true, msg: 'user_name must be unique' },
         allowNull: false,
         validate: {
-            isAlphanumeric: true,
-            notNull: true
+            notNull: { val: true, msg: 'user_name cannot be null' },
+            notEmpty: { val: false, msg: 'user_name cannot be empty' },
+            len: { args: [3, 50], msg: 'user_name must be atleast 3 characters in length and 50 at max' }
         }
     },
     pass: {
-        type: sequelize.TEXT,
+        type: sequelize.CHAR(60),
+        allowNull: true,
         validate: {
-            isNull: true,
-            isAlphanumeric: true
+            notNull: false,
+            len: { args: [60, 60], msg: 'pass should be 60 characters' }
         }
     },
     acc_token: {
         type: sequelize.CHAR,
+        unique: { val: true, msg: 'acc_token must be unique' },
+        allowNull: true,
         validate: {
-            isNull: true,
+            notNull: false,
             isAlphanumeric: true,
-            max: 128,
-            min: 128
+            len: { args: [128, 128], msg: 'user_name should be 128 characters' }
         }
     },
     acc_token_expiry: {
         type: sequelize.INTEGER(11).UNSIGNED,
+        allowNull: true,
         validate: {
-            isNull: true,
-            isInt: true
+            notNull: false,
+            isInt: { val: true, msg: 'acc_token_expiry must be a number' }
         }
     },
     last_login: {
         type: sequelize.INTEGER(11).UNSIGNED,
+        allowNull: true,
         validate: {
-            isNull: true,
-            isInt: true
+            notNull: false,
+            isInt: { val: true, msg: 'last_login must be a number' }
         }
     },
+    createdAt: {
+        type: sequelize.DATE,
+        defaultValue: sequelize.NOW,
+        allowNull: false
+    }
 }, {
     underscored: true,
     timestamps: true

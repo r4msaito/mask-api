@@ -6,5 +6,6 @@ module.exports = {
     DB_HOST: 'localhost',
     DB_TABLE_PREFIX: 'mask_api_',
     DB_USERS_TABLE: 'users',
-    DB_POSTS_TABLE: 'posts'
+    DB_POSTS_TABLE: 'posts',
+    DB_TABLE_COL_PREFIX: 'mskx_'
 };
