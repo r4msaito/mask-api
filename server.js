@@ -1,15 +1,13 @@
-//requires
 const express = require('express');
 const bodyParser = require('body-parser');
-const {check, validationResult} = require('express-validator');
 const router = express.Router();
 const app = express();
+const fs = require('fs');
 const constants = require('./includes/constants.js');
-const util = require('./includes/util');
+const ServiceHelper = require('./includes/service-helper');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-
 
 /*
  * Index router handler
@@ -33,11 +31,20 @@ app.use(function(req, res, next) {
  * API Routes
  */
 
+fs.readdirSync('./api').forEach((apiFile) => {
+    let apiFileNoExt = apiFile.split('.')[0];
+    let mount = '/api/' + apiFileNoExt;
+    let func = require('./api/' + apiFileNoExt);
+    app.use(mount, func);
+});
+ 
+
 /*
  * Router handler for non-existent resource - 404 response
  */
+
 app.use(function(req, resp, next) {
-    return util.serviceDie(resp, { status: 'error', msg: 'The resource you are trying to access does not exist' }, 404);
+    return ServiceHelper.serviceDie(resp, { status: 'error', msg: 'The resource you are trying to access does not exist' }, 404);
 });
 
 //Main listening port
