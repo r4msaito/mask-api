@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const router = express.Router();
 const app = express();
 const fs = require('fs');
-const constants = require('./includes/constants.js');
+const constants = require('./includes/constants');
 const ServiceHelper = require('./includes/service-helper');
 
 app.use(bodyParser.json());
@@ -44,7 +44,7 @@ fs.readdirSync('./api').forEach((apiFile) => {
  */
 
 app.use(function(req, resp, next) {
-    return ServiceHelper.serviceDie(resp, { status: 'error', msg: 'The resource you are trying to access does not exist' }, 404);
+    return ServiceHelper.die(resp, { status: 'error', msg: 'The resource you are trying to access does not exist' }, 404);
 });
 
 //Main listening port

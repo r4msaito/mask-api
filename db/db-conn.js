@@ -1,7 +1,7 @@
 const sequelize = require('sequelize');
 const constants = require('../includes/constants');
 
-module.exports = new sequelize(constants.DB_NAME, constants.DB_USERNAME, constants.DB_PASS, {
-    host: constants.DB_HOST,
+module.exports = new sequelize(constants.DB.NAME, constants.DB.USERNAME, constants.DB.PASS, {
+    host: constants.DB.HOST,
     dialect: 'mysql'
 });

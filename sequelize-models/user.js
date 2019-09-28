@@ -1,11 +1,9 @@
 const sequelize = require('sequelize');
 const dbConn = require('../db/db-conn');
-const BaseModel = require('./base-model');
 const constants = require('../includes/constants');
+const BaseModelSequelize = require('./base-model');
 
-class User extends BaseModel {
-    
-
+class User extends BaseModelSequelize {
     static model() {
         return dbConn.define(constants.DB.TABLE.PREFIX + constants.DB.TABLE.USERS, {
             id: {

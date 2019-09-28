@@ -1,8 +1,8 @@
 const sequelize = require('sequelize');
 const dbConn = require('../db/db-conn');
-const constants = require('../includes/constants');
+const constants = require('../mixins/constants');
 
-module.exports = dbConn.define(constants.DB_TABLE_PREFIX + constants.DB_POSTS_TABLE, {
+module.exports = dbConn.define(constants.DB.TABLE.PREFIX + constants.DB.TABLE.POSTS, {
     id: {
         type: sequelize.INTEGER(11).UNSIGNED,
         primaryKey: true,

@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
-const User = require('../controller/user');
+//const User = require('../controller/user');
+const User = require('../models/user');
 const ServiceHelper = require('../includes/service-helper');
 const BcryptHelper = require('../includes/bcrypt-helper');
+const BaseJWTAuthenticator = require('../includes/jwt-authenticator');
 
 
 /*
@@ -22,7 +24,7 @@ router.post('/', [
         return true;
     }),
     check('pwd').not().isEmpty().withMessage('pwd must not be empty')
-    .isLength({ min: 6, max: 50 }).withMessage('pwd must be atleast 6 characters in length and 50 at max'),
+    .isLength({ min: 6, max: 50 }).withMessage('pwd must be atleast 6 characters in length and 50 at max')
 ], async(req, res, next) => {
     let resp = {};
     let valdErrs = validationResult(req);
@@ -35,10 +37,21 @@ router.post('/', [
 
     let passHash = await BcryptHelper.hashPassword(req.body.pwd);
     if (passHash.length === 60) {
-        let newUser = await User.create({
-            user_name: req.body.user_name,
-            pass: passHash
-        });
+        // let newUser = await User.create({
+        //     user_name: req.body.user_name,
+        //     pass: passHash
+        // });
+
+        // let newUser = new User();
+        // newUser.user_name = 'sriram';
+        // newUser.pass = passHash;
+        // newUser.save();
+
+        let newUser = User;
+        console.log(User.attributes);
+        newUser.user_name = 'Sriram';
+        newUser.pass = passHash;
+        newUser.create();
 
         if (!newUser.hasOwnProperty('errors')) {
             resp.status = 'success';
@@ -92,6 +105,7 @@ router.post('/login', [
     check('user_name').not().isEmpty().withMessage('user_name must not be empty'),
     check('pwd').not().isEmpty().withMessage('pwd must not be empty')
 ], (req, res, next) => {
+    let resp = {};
     let valdErrs = validationResult(req);
     if (!valdErrs.isEmpty()) {
         return ServiceHelper.die(res, {
@@ -99,6 +113,19 @@ router.post('/login', [
             msg: valdErrs.array()[0].msg
         }, 400);
     }
+
+    let token = BaseJWTAuthenticator.login({ foo: 'bar' });
+    if (token) {
+        resp.status = 'success';
+        resp.token = token;
+        resp.msg = 'Login successful';
+    } else {
+        resp.status = 'error';
+        resp.msg = 'User name or password might be incorrect';
+        resp.token = '';
+    }
+
+    ServiceHelper.die(res, resp, 200);
 
 });
 
