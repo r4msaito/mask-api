@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
-//const User = require('../controller/user');
 const User = require('../models/user');
-const ServiceHelper = require('../includes/service-helper');
+const ServiceUtil = require('../includes/service-util');
 const BcryptHelper = require('../includes/bcrypt-helper');
 const BaseJWTAuthenticator = require('../includes/jwt-authenticator');
 
@@ -29,7 +28,7 @@ router.post('/', [
     let resp = {};
     let valdErrs = validationResult(req);
     if (!valdErrs.isEmpty()) {
-        return ServiceHelper.die(res, {
+        return ServiceUtil.die(res, {
             status: 'error',
             msg: valdErrs.array()[0].msg
         }, 400);
@@ -37,22 +36,19 @@ router.post('/', [
 
     let passHash = await BcryptHelper.hashPassword(req.body.pwd);
     if (passHash.length === 60) {
-        // let newUser = await User.create({
-        //     user_name: req.body.user_name,
-        //     pass: passHash
-        // });
 
-        // let newUser = new User();
-        // newUser.user_name = 'sriram';
-        // newUser.pass = passHash;
-        // newUser.save();
+        let newUser = await User.query().insert({
+            user_name: req.body.user_name,
+            pass: req.body.pwd
+        }).then((us) => {
+            console.log('INSIDE THEN');
+            console.log(us);
+        }).catch((us) => {
+            console.log('INSIDE CATCH');
+            console.log(us);
+        });
 
-        let newUser = User;
-        console.log(User.attributes);
-        newUser.user_name = 'Sriram';
-        newUser.pass = passHash;
-        newUser.create();
-
+        //console.log(newUser);
         if (!newUser.hasOwnProperty('errors')) {
             resp.status = 'success';
             resp.msg = newUser.id;
@@ -65,7 +61,7 @@ router.post('/', [
         resp.msg = 'problem in calculating pass hash';
     }
 
-    ServiceHelper.die(res, resp, 200);
+    ServiceUtil.die(res, resp, 200);
 });
 
 /*
@@ -79,7 +75,7 @@ router.delete('/', [
     let resp = {};
     let valdErrs = validationResult(req);
     if (!valdErrs.isEmpty()) {
-        return ServiceHelper.die(res, {
+        return ServiceUtil.die(res, {
             status: 'error',
             msg: valdErrs.array()[0].msg
         }, 400);
@@ -94,7 +90,7 @@ router.delete('/', [
         resp.status = 'error';
     }
 
-    ServiceHelper.die(res, resp, 200);
+    ServiceUtil.die(res, resp, 200);
 });
 
 /*
@@ -108,7 +104,7 @@ router.post('/login', [
     let resp = {};
     let valdErrs = validationResult(req);
     if (!valdErrs.isEmpty()) {
-        return ServiceHelper.die(res, {
+        return ServiceUtil.die(res, {
             status: 'error',
             msg: valdErrs.array()[0].msg
         }, 400);
@@ -125,7 +121,7 @@ router.post('/login', [
         resp.token = '';
     }
 
-    ServiceHelper.die(res, resp, 200);
+    ServiceUtil.die(res, resp, 200);
 
 });
 

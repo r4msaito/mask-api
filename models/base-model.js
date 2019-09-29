@@ -1,15 +1,10 @@
-class BaseModel {
-    constructor() {
-        return this.constructor.model().build();
-    }
+const dbConnection = include('db/connection');
+const { Model } = require('objection');
 
-    static async getModelByPK(pk) {
-        return await this.model().findByPk(pk);
-    }
+Model.knex(dbConnection);
 
-    static model() {
-        //return sequelize model here
-    }
+class BaseModel extends Model {
+
 }
 
-module.exports = BaseModel;
+module.exports.BaseModel = BaseModel;
