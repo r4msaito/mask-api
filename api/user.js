@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
-const User = require('../models/user');
-const ServiceUtil = require('../includes/service-util');
-const BcryptHelper = require('../includes/bcrypt-helper');
-const BaseJWTAuthenticator = require('../includes/jwt-authenticator');
+const { User } = include('models/user');
+const { Util } = include('includes/util');
+const { BcryptHelper } = include('includes/bcrypt-helper');
+const { JWTAuthenticator } = include('includes/jwt-authenticator');
 
 
 /*
@@ -13,22 +13,22 @@ const BaseJWTAuthenticator = require('../includes/jwt-authenticator');
 
 router.post('/', [
     check('user_name').not().isEmpty().withMessage('user_name must not be empty')
-    .isLength({ min: 3, max: 50 }).withMessage('user_name must be atleast 3 characters in length and 50 at max')
-    .custom(val => {
-        var rgx = /[^A-Za-z0-9_]/g;
+        .isLength({ min: 3, max: 50 }).withMessage('user_name must be atleast 3 characters in length and 50 at max')
+        .custom(val => {
+            var rgx = /[^A-Za-z0-9_]/g;
 
-        if (rgx.test(val))
-            throw new Error('user_name can contain only alphabet, numbers or underscore');
+            if (rgx.test(val))
+                throw new Error('user_name can contain only alphabet, numbers or underscore');
 
-        return true;
-    }),
+            return true;
+        }),
     check('pwd').not().isEmpty().withMessage('pwd must not be empty')
-    .isLength({ min: 6, max: 50 }).withMessage('pwd must be atleast 6 characters in length and 50 at max')
-], async(req, res, next) => {
+        .isLength({ min: 6, max: 50 }).withMessage('pwd must be atleast 6 characters in length and 50 at max')
+], async (req, res, next) => {
     let resp = {};
     let valdErrs = validationResult(req);
     if (!valdErrs.isEmpty()) {
-        return ServiceUtil.die(res, {
+        return Util.die(res, {
             status: 'error',
             msg: valdErrs.array()[0].msg
         }, 400);
@@ -36,32 +36,19 @@ router.post('/', [
 
     let passHash = await BcryptHelper.hashPassword(req.body.pwd);
     if (passHash.length === 60) {
-
-        let newUser = await User.query().insert({
+        let userInsert = await User.query().insert({
             user_name: req.body.user_name,
-            pass: req.body.pwd
-        }).then((us) => {
-            console.log('INSIDE THEN');
-            console.log(us);
-        }).catch((us) => {
-            console.log('INSIDE CATCH');
-            console.log(us);
+            pass: passHash
         });
 
-        //console.log(newUser);
-        if (!newUser.hasOwnProperty('errors')) {
-            resp.status = 'success';
-            resp.msg = newUser.id;
-        } else {
-            resp.status = 'error';
-            resp.msg = newUser.errors[0].message;
-        }
+        console.log(passHash);
+        console.log(passHash);
     } else {
         resp.status = 'error';
         resp.msg = 'problem in calculating pass hash';
     }
 
-    ServiceUtil.die(res, resp, 200);
+    Util.die(res, resp, 200);
 });
 
 /*
@@ -70,12 +57,12 @@ router.post('/', [
 
 router.delete('/', [
     check('id').not().isEmpty().withMessage('id must not be empty')
-    .isDecimal().withMessage('id must be an integer')
-], async(req, res, next) => {
+        .isDecimal().withMessage('id must be an integer')
+], async (req, res, next) => {
     let resp = {};
     let valdErrs = validationResult(req);
     if (!valdErrs.isEmpty()) {
-        return ServiceUtil.die(res, {
+        return Util.die(res, {
             status: 'error',
             msg: valdErrs.array()[0].msg
         }, 400);
@@ -90,7 +77,7 @@ router.delete('/', [
         resp.status = 'error';
     }
 
-    ServiceUtil.die(res, resp, 200);
+    Util.die(res, resp, 200);
 });
 
 /*
@@ -104,7 +91,7 @@ router.post('/login', [
     let resp = {};
     let valdErrs = validationResult(req);
     if (!valdErrs.isEmpty()) {
-        return ServiceUtil.die(res, {
+        return Util.die(res, {
             status: 'error',
             msg: valdErrs.array()[0].msg
         }, 400);
@@ -121,7 +108,7 @@ router.post('/login', [
         resp.token = '';
     }
 
-    ServiceUtil.die(res, resp, 200);
+    Util.die(res, resp, 200);
 
 });
 

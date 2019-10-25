@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const express = require('express');
 const app = express();
 
-class BaseJWTAuthenticator {
+class JWTAuthenticator {
     static authenticate(req, res, next) {
         
     }
@@ -16,4 +16,4 @@ class BaseJWTAuthenticator {
     }
 }
 
-module.exports = BaseJWTAuthenticator;
+module.exports.JWTAuthenticator = JWTAuthenticator;

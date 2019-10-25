@@ -21,4 +21,4 @@ class BcryptHelper {
     }
 }
 
-module.exports = BcryptHelper;
+module.exports.BcryptHelper = BcryptHelper;

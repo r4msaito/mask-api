@@ -1,4 +1,4 @@
-const dbConnection = include('db/connection');
+const { dbConnection } = include('db/connection');
 const { Model } = require('objection');
 
 Model.knex(dbConnection);

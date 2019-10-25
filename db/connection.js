@@ -1,13 +1,13 @@
-const { appConfig } = include('includes/config');
+const { config } = include('config/master');
 
 const dbConnection = require('knex')({
     client: 'mysql2',
     connection: {
-        host: appConfig.DB.HOST,
-        user: appConfig.DB.USERNAME,
-        password: appConfig.DB.PASS,
-        database: appConfig.DB.NAME
+        host: config['db']['host'],
+        user: config['db']['username'],
+        password: config['db']['pass'],
+        database: config['db']['name']
     }
 });
 
-module.exports = dbConnection;
+module.exports.dbConnection = dbConnection;
