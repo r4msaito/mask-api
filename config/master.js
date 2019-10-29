@@ -6,10 +6,11 @@ module.exports.config = (function () {
     let config = {
         db: {
             name: 'mask_api_engine',
+            table_prefix: 'mskx_',
             table: {
-                prefix: 'mskx_',
                 users: 'users',
-                posts: 'posts'
+                posts: 'posts',
+                error_log: 'error_log'
             }
         }
     };

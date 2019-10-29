@@ -6,6 +6,8 @@ global.include = function (file) {
     return require(abs_path('/' + file));
 }
 
+process.env.TZ = 'Asia/Kolkata';
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');

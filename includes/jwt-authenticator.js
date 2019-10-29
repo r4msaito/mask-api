@@ -7,7 +7,7 @@ class JWTAuthenticator {
         
     }
 
-    static login(user) {
+    static genJWT(user) {
         return jwt.sign(user, this.getSecret(), { expiresIn: 86400 });
     }
 

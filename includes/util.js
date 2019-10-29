@@ -1,4 +1,5 @@
 
+const moment = require('moment');
 
 class MaskUtil {
     static getCurrentEnvironment() {
@@ -26,6 +27,10 @@ class MaskUtil {
     static die(resp, payload, statusCode) {
         var statusCode = (typeof statusCode === 'undefined') ? 200 : statusCode;
         return resp.status(statusCode).json(payload);
+    }
+
+    static getCurrMysqlDateTime() {
+        return moment().format("YYYY-MM-DD HH:mm:ss");
     }
 }
 

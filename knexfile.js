@@ -14,7 +14,7 @@ module.exports = {
             max: 10
         },
         migrations: {
-            tableName: config['db']['table']['prefix'] + 'knex_migrations'
+            tableName: config['db']['table_prefix'] + 'knex_migrations'
         }
     },
 
@@ -31,7 +31,7 @@ module.exports = {
             max: 10
         },
         migrations: {
-            tableName: config['db']['table']['prefix'] + 'knex_migrations'
+            tableName: config['db']['table_prefix'] + 'knex_migrations'
         }
     },
 
@@ -48,7 +48,7 @@ module.exports = {
             max: 10
         },
         migrations: {
-            tableName: config['db']['table']['prefix'] + 'knex_migrations'
+            tableName: config['db']['table_prefix'] + 'knex_migrations'
         }
     }
 

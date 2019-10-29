@@ -15,8 +15,10 @@
     "express-validator": "^6.1.0",
     "jsonwebtoken": "^8.5.1",
     "knex": "^0.19.4",
+    "moment": "^2.24.0",
     "mysql2": "^1.6.5",
-    "objection": "^1.6.9"
+    "objection": "^1.6.9",
+    "objection-db-errors": "^1.1.1"
   },
   "devDependencies": {}
 }
