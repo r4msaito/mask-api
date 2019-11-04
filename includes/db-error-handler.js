@@ -19,6 +19,8 @@ class DBErrorHandler {
             return 'Unexpected problem. Try again later.';
         } else if (err instanceof ValidationError) {
             return err.message.replace(':', '');
+        } else {
+            return err.message;
         }
     }
 

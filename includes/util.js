@@ -32,6 +32,10 @@ class MaskUtil {
     static getCurrMysqlDateTime() {
         return moment().format("YYYY-MM-DD HH:mm:ss");
     }
+
+    static genFileName() {
+        return Date.now();
+    }
 }
 
 module.exports.Util = MaskUtil;

@@ -41,12 +41,7 @@ app.use(function (req, res, next) {
  * API Routes
  */
 
-fs.readdirSync('./api').forEach((apiFile) => {
-    let apiFileNoExt = apiFile.split('.')[0];
-    let mount = '/api/' + apiFileNoExt;
-    let func = require('./api/' + apiFileNoExt);
-    app.use(mount, func);
-});
+app.use('/api/user', require('./api/user'));
 
 
 /*

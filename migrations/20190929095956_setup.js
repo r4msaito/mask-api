@@ -5,7 +5,6 @@ exports.up = function (knex) {
         table.increments('id');
         table.string('user_name', 60).notNullable();
         table.string('pass', 60).nullable();
-        table.datetime('last_login');
         table.timestamps();
         table.unique('user_name');
     }).createTable(config['db']['table_prefix'] + config['db']['table']['error_log'], (table) => {

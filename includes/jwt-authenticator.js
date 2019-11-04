@@ -1,6 +1,4 @@
 const jwt = require('jsonwebtoken');
-const express = require('express');
-const app = express();
 
 class JWTAuthenticator {
     static authenticate(req, res, next) {

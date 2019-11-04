@@ -1,11 +1,12 @@
 const { BaseModel } = include('models/base-model');
 const { config } = include('config/master');
 const { Util } = include('includes/util');
-const { ErrorLog } = include('models/error-log');
+const { ErrorLogger } = include('models/error-log');
 const { BcryptHelper } = include('includes/bcrypt-helper');
 const { ValidationError } = require('objection');
 
 class User extends BaseModel {
+
     static get tableName() {
         return config['db']['table_prefix'] + config['db']['table']['users'];
     }
@@ -38,15 +39,15 @@ class User extends BaseModel {
 
     static async checkLogin(user_name, pass) {
         return await User.findUserByUserName(User.sanitizeUserName(user_name))
-            .then((result) => {
+            .then(async (result) => {
                 if (result.length !== 0) {
-                    let checkHash = BcryptHelper.checkHash(pass, result.pass);
+                    let checkHash = await BcryptHelper.checkHash(pass, result[0].pass);
                     return (checkHash) ? result[0] : false;
                 }
             }).catch((err) => {
-                let errStr = JSON.stringify(err);
+                let errStr = DBErrorHandler.getSafeErrorMessage(err);
                 if (errStr)
-                    ErrorLog.logError({
+                    ErrorLogger.logError({
                         error: errStr,
                         file_info: 'user.js checkLogin'
                     });
@@ -58,6 +59,25 @@ class User extends BaseModel {
     static sanitizeUserName(user_name) {
         return user_name.replace(/[^A-Za-z0-9_]/g, '');
     }
+
+    static getAllowedDPExt() {
+        return [
+            'image/jpeg',
+            'image/png'
+        ];
+    }
+
+    static validateDP(file) {
+        if (file.size > User.DPMaxSize)
+            return false;
+        
+        if (!User.getAllowedDPExt().includes(file.type))
+            return false;
+
+        return true;
+    }
 }
+
+User.DPMaxSize = 3500;
 
 module.exports.User = User;

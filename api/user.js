@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
 const { User } = include('models/user');
-const { ErrorLog } = include('models/error-log');
+const { ErrorLogger } = include('models/error-log');
 const { Util } = include('includes/util');
 const { JWTAuthenticator } = include('includes/jwt-authenticator');
 const { BcryptHelper } = include('includes/bcrypt-helper');
 const { DBErrorHandler } = include('includes/db-error-handler');
-const { constants } = require('../includes/constants');
+const { constants } = include('includes/constants');
+const { config } = include('config/master');
 
 /*
  * Registration API
@@ -39,7 +40,7 @@ router.post('/', [
 
     let passHash = await BcryptHelper.hashPassword(req.body.pass);
     if (passHash.length === 60) {
-        let userInsert = await User.query().insert({
+        await User.query().insert({
             user_name: req.body.user_name,
             pass: passHash
         }).then((result) => {
@@ -49,7 +50,7 @@ router.post('/', [
         }).catch((err) => {
             let errStr = JSON.stringify(err);
             if (errStr)
-                ErrorLog.logError({
+                ErrorLogger.logError({
                     error: errStr,
                     file_info: 'registration api'
                 });
@@ -59,11 +60,10 @@ router.post('/', [
             resp.msg = safeMsg;
             statusCode = 500;
         });
-
     } else {
         resp.status = constants.API_STATUS_ERROR;
-        resp.msg = 'problem in calculating pass hash';
-        statusCode = 500;
+        resp.msg = 'Problem in registering. Please try again later';
+        statusCode = 200;
     }
 
     Util.die(res, resp, statusCode);
@@ -87,7 +87,10 @@ router.post('/authenticate', [
         }),
     check('pass').not().isEmpty().withMessage('pwd must not be empty')
 ], async (req, res, next) => {
-    let resp = {};
+    let resp = {
+        token: ''
+    };
+    let statusCode = 200;
     let valdErrs = validationResult(req);
     if (!valdErrs.isEmpty()) {
         return Util.die(res, {
@@ -106,22 +109,21 @@ router.post('/authenticate', [
             resp.msg = 'Successfully logged in!';
             resp.token = token;
         } catch (err) {
-            ErrorLog.logError({
+            ErrorLogger.logError({
                 error: err.message,
                 file_info: 'user authenticate api'
             });
 
             resp.status = constants.API_STATUS_ERROR;
-            resp.msg = 'Unexpected problem in authentication. Please try again later.'
-            resp.token = '';
+            resp.msg = 'Unexpected problem in authentication. Please try again later.';
+            statusCode = 500;
         }
     } else {
         resp.status = constants.API_STATUS_ERROR;
         resp.msg = 'User name or password might be incorrect!'
-        resp.token = '';
     }
 
-    Util.die(res, resp, 200);
+    Util.die(res, resp, statusCode);
 });
 
 
@@ -141,32 +143,23 @@ router.get('/exists', [
         }),
 ], async (req, res, next) => {
     let resp = {};
-    let statusCode = 200;
+    User.findUserByUserName(req.body.user_name).then((result) => {
+        resp.status = constants.API_STATUS_SUCCESS
+        resp.msg = (result.length !== 0) ? 'User is present' : 'User does not exists';
+        Util.die(res, resp, 200);
+    }).catch((err) => {
+        let errStr = JSON.stringify(err);
+        if (errStr)
+            ErrorLog.logError({
+                error: errStr,
+                file_info: 'user exists api'
+            });
 
-    // User.findUserByUserName(req.body.user_name).then((result) => {
-    //     console.log('inside then');
-    //     console.log(result);
-    //     resp.status = constants.API_STATUS_SUCCESS
-    //     resp.msg = (result.length !== 0) ? 'User is present' : 'User does not exists';
-    // }).catch((err) => {
-    //     console.log('inside catch');
-    //     console.log(err);
-    //     let errStr = JSON.stringify(err);
-    //     if (errStr)
-    //         ErrorLog.logError({
-    //             error: errStr,
-    //             file_info: 'user exists api'
-    //         });
-
-    //     resp.status = constants.API_STATUS_ERROR;
-    //     resp.msg = DBErrorHandler.getSafeErrorMessage(err);
-    // });
-
-    let a = await User.findUserByUserName(req.body.user_name);
-    //console.log(a);
-
-
-    Util.die(res, resp, statusCode);
+        resp.status = constants.API_STATUS_ERROR;
+        resp.msg = DBErrorHandler.getSafeErrorMessage(err);
+        Util.die(res, resp, 500);
+    });
 });
+
 
 module.exports = router;

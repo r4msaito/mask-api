@@ -1,5 +1,6 @@
 const { BaseModel } = include('models/base-model');
 const { config } = include('config/master');
+const { DBErrorHandler } = include('includes/db-error-handler');
 
 class ErrorLog extends BaseModel {
     static get tableName() {
@@ -18,9 +19,13 @@ class ErrorLog extends BaseModel {
         };
     }
 
-    static async logError(err) {
-        return await ErrorLog.query().insert(err);
+    static logError(err) {
+        ErrorLog.query().insert(err).then((result) => {
+            return true;
+        }).catch((err) => {
+            return false;
+        });
     }
 }
 
-module.exports.ErrorLog = ErrorLog;
+module.exports.ErrorLogger = ErrorLog;
