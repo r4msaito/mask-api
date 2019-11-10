@@ -14,6 +14,9 @@ module.exports.config = (function () {
                 posts_cat: 'posts_cat',
                 posts_cat_rel: 'posts_cat_rel',
                 user_post_cat_rel: 'user_post_cat_rel',
+                post_comments: 'post_comments',
+                posts_like: 'posts_like',
+                posts_share_log: 'posts_share_log',
                 error_log: 'error_log',
             }
         },

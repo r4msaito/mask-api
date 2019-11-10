@@ -16,18 +16,18 @@ const { config } = include('config/master');
 
 router.post('/', [
     check('user_name').not().isEmpty().withMessage('user_name must not be empty')
-        .isLength({ min: 3, max: 50 }).withMessage('user_name must be atleast 3 characters in length and 50 at max')
-        .custom(val => {
-            var rgx = /[^A-Za-z0-9_]/g;
+    .isLength({ min: 3, max: 50 }).withMessage('user_name must be atleast 3 characters in length and 50 at max')
+    .custom(val => {
+        var rgx = /[^A-Za-z0-9_]/g;
 
-            if (rgx.test(val))
-                throw new Error('user_name can contain only alphabet, numbers or underscore');
+        if (rgx.test(val))
+            throw new Error('user_name can contain only alphabet, numbers or underscore');
 
-            return true;
-        }),
+        return true;
+    }),
     check('pass').not().isEmpty().withMessage('pass must not be empty')
-        .isLength({ min: 6, max: 50 }).withMessage('pass must be atleast 6 characters in length and 50 at max')
-], async (req, res, next) => {
+    .isLength({ min: 6, max: 50 }).withMessage('pass must be atleast 6 characters in length and 50 at max')
+], async(req, res, next) => {
     let resp = {};
     let statusCode = 200;
     let valdErrs = validationResult(req);
@@ -77,16 +77,16 @@ router.post('/', [
 
 router.post('/authenticate', [
     check('user_name').not().isEmpty().withMessage('user_name must not be empty')
-        .custom(val => {
-            var rgx = /[^A-Za-z0-9_]/g;
+    .custom(val => {
+        var rgx = /[^A-Za-z0-9_]/g;
 
-            if (rgx.test(val))
-                throw new Error('user_name must contain propert characters');
+        if (rgx.test(val))
+            throw new Error('user_name must contain propert characters');
 
-            return true;
-        }),
+        return true;
+    }),
     check('pass').not().isEmpty().withMessage('pwd must not be empty')
-], async (req, res, next) => {
+], async(req, res, next) => {
     let resp = {
         token: ''
     };
@@ -103,6 +103,7 @@ router.post('/authenticate', [
     if (loggedIn !== false && typeof loggedIn === 'object') {
         try {
             let token = JWTAuthenticator.genJWT({
+                id: loggedIn.id,
                 user_name: loggedIn.user_name
             });
             resp.status = constants.API_STATUS_SUCCESS;
@@ -133,19 +134,25 @@ router.post('/authenticate', [
 
 router.get('/exists', [
     check('user_name').not().isEmpty().withMessage('user_name must not be empty')
-        .custom(val => {
-            var rgx = /[^A-Za-z0-9_]/g;
+    .custom(val => {
+        var rgx = /[^A-Za-z0-9_]/g;
 
-            if (rgx.test(val))
-                throw new Error('user_name must contain proper characters');
+        if (rgx.test(val))
+            throw new Error('user_name must contain proper characters');
 
-            return true;
-        }),
-], async (req, res, next) => {
-    let resp = {};
+        return true;
+    }),
+], async(req, res, next) => {
+    let resp = { found: false };
     User.findUserByUserName(req.body.user_name).then((result) => {
         resp.status = constants.API_STATUS_SUCCESS
-        resp.msg = (result.length !== 0) ? 'User is present' : 'User does not exists';
+        if (result.length !== 0) {
+            resp.found = true;
+            resp.msg = 'User is present'
+        } else {
+            resp.msg = 'User does not exists';
+        }
+        
         Util.die(res, resp, 200);
     }).catch((err) => {
         let errStr = JSON.stringify(err);
