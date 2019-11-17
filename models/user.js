@@ -8,7 +8,7 @@ const { ValidationError } = require('objection');
 class User extends BaseModel {
 
     static get tableName() {
-        return config['db']['table_prefix'] + config['db']['table']['users'];
+        return config['db']['table_prefix'] + config['db']['table']['user'];
     }
 
     static get jsonSchema() {
@@ -23,7 +23,7 @@ class User extends BaseModel {
         };
     }
 
-    $beforeInsert(queryContext) {
+    $beforeInsert() {
         let currMySQLDateTime = Util.getCurrMysqlDateTime();
         this.created_at = currMySQLDateTime;
         this.updated_at = currMySQLDateTime;

@@ -85,7 +85,7 @@ router.post('/authenticate', [
 
         return true;
     }),
-    check('pass').not().isEmpty().withMessage('pwd must not be empty')
+    check('pass').not().isEmpty().withMessage('pass must not be empty')
 ], async(req, res, next) => {
     let resp = {
         token: ''
@@ -103,7 +103,7 @@ router.post('/authenticate', [
     if (loggedIn !== false && typeof loggedIn === 'object') {
         try {
             let token = JWTAuthenticator.genJWT({
-                id: loggedIn.id,
+                currentUserID: loggedIn.id,
                 user_name: loggedIn.user_name
             });
             resp.status = constants.API_STATUS_SUCCESS;

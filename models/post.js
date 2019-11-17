@@ -5,7 +5,7 @@ const { Util } = include('includes/util');
 class Post extends BaseModel {
 
     static get tableName() {
-        return config['db']['table_prefix'] + config['db']['table']['posts'];
+        return config['db']['table_prefix'] + config['db']['table']['post'];
     }
 
     static get jsonSchema() {
@@ -28,19 +28,6 @@ class Post extends BaseModel {
 
     $beforeUpdate() {
         this.updated_at = Util.getCurrMysqlDateTime();
-    }
-
-    static validatePostCatInput(postCats) {
-        let splitCats = postCats.split(',');
-
-        if (splitCats.length === 0)
-            return true;
-
-        let filteredCats = splitCats.filter((catID) => {
-            return (parseInt(catID) !== NaN) ? true : false;
-        });
-
-        return (filteredCats.length) ? true : false;
     }
 }
 
