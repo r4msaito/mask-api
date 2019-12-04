@@ -1,63 +1,83 @@
-const sequelize = require('sequelize');
-const dbConn = require('../db/db-conn');
-const constants = require('../includes/constants');
+const { BaseModel } = include('models/base-model');
+const { config } = include('config/master');
+const { Util } = include('includes/util');
+const { ErrorLogger } = include('models/error-log');
+const { BcryptHelper } = include('includes/bcrypt-helper');
+const { ValidationError } = require('objection');
 
-module.exports = dbConn.define(constants.DB_TABLE_PREFIX + constants.DB_USERS_TABLE, {
-    id: {
-        type: sequelize.INTEGER(11).UNSIGNED,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    user_name: {
-        type: sequelize.STRING(60),
-        unique: { val: true, msg: 'user_name must be unique' },
-        allowNull: false,
-        validate: {
-            notNull: { val: true, msg: 'user_name cannot be null' },
-            notEmpty: { val: false, msg: 'user_name cannot be empty' },
-            len: { args: [3, 50], msg: 'user_name must be atleast 3 characters in length and 50 at max' }
-        }
-    },
-    pass: {
-        type: sequelize.CHAR(60),
-        allowNull: true,
-        validate: {
-            notNull: false,
-            len: { args: [60, 60], msg: 'pass should be 60 characters' }
-        }
-    },
-    acc_token: {
-        type: sequelize.CHAR,
-        unique: { val: true, msg: 'acc_token must be unique' },
-        allowNull: true,
-        validate: {
-            notNull: false,
-            isAlphanumeric: true,
-            len: { args: [128, 128], msg: 'user_name should be 128 characters' }
-        }
-    },
-    acc_token_expiry: {
-        type: sequelize.INTEGER(11).UNSIGNED,
-        allowNull: true,
-        validate: {
-            notNull: false,
-            isInt: { val: true, msg: 'acc_token_expiry must be a number' }
-        }
-    },
-    last_login: {
-        type: sequelize.INTEGER(11).UNSIGNED,
-        allowNull: true,
-        validate: {
-            notNull: false,
-            isInt: { val: true, msg: 'last_login must be a number' }
-        }
-    },
-    createdAt: {
-        type: sequelize.DATE,
-        defaultValue: sequelize.NOW,
-        allowNull: false
+class User extends BaseModel {
+
+    static get tableName() {
+        return config['db']['table_prefix'] + config['db']['table']['user'];
     }
-}, {
-    underscored: true,
-    timestamps: true
-});
+
+    static get jsonSchema() {
+        return {
+            type: 'object',
+            required: ['user_name', 'pass'],
+            properties: {
+                id: { type: 'integer' },
+                user_name: { type: 'string', minLength: 3, maxLength: 60 },
+                pass: { type: 'string', minLength: 8, maxLength: 60 }
+            }
+        };
+    }
+
+    $beforeInsert() {
+        let currMySQLDateTime = Util.getCurrMysqlDateTime();
+        this.created_at = currMySQLDateTime;
+        this.updated_at = currMySQLDateTime;
+    }
+
+    $beforeUpdate() {
+        this.updated_at = Util.getCurrMysqlDateTime();
+    }
+
+    static async findUserByUserName(user_name) {
+        return await User.query().where('user_name', user_name);
+    }
+
+    static async checkLogin(user_name, pass) {
+        return await User.findUserByUserName(User.sanitizeUserName(user_name))
+            .then(async (result) => {
+                if (result.length !== 0) {
+                    let checkHash = await BcryptHelper.checkHash(pass, result[0].pass);
+                    return (checkHash) ? result[0] : false;
+                }
+            }).catch((err) => {
+                let errStr = DBErrorHandler.getSafeErrorMessage(err);
+                if (errStr)
+                    ErrorLogger.logError({
+                        error: errStr,
+                        file_info: 'user.js checkLogin'
+                    });
+
+                return false;
+            });
+    }
+
+    static sanitizeUserName(user_name) {
+        return user_name.replace(/[^A-Za-z0-9_]/g, '');
+    }
+
+    static getAllowedDPExt() {
+        return [
+            'image/jpeg',
+            'image/png'
+        ];
+    }
+
+    static validateDP(file) {
+        if (file.size > User.DPMaxSize)
+            return false;
+        
+        if (!User.getAllowedDPExt().includes(file.type))
+            return false;
+
+        return true;
+    }
+}
+
+User.DPMaxSize = 3500;
+
+module.exports.User = User;

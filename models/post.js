@@ -1,38 +1,37 @@
-const sequelize = require('sequelize');
-const dbConn = require('../db/db-conn');
-const constants = require('../includes/constants');
+const { BaseModel } = include('models/base-model');
+const { config } = include('config/master');
+const { Util } = include('includes/util');
 
-module.exports = dbConn.define(constants.DB_TABLE_PREFIX + constants.DB_POSTS_TABLE, {
-    id: {
-        type: sequelize.INTEGER(11).UNSIGNED,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    content: {
-        type: sequelize.TEXT,
-        allowNull: false,
-        validate: {
-            isAlpha: true,
-            notNull: true
-        }
-    },
-    excerpt: {
-        type: sequelize.TEXT,
-        allowNull: true,
-        validate: {
-            isAlpha: true,
-            notNull: false
-        }
-    },
-    hashtags: {
-        type: sequelize.TEXT,
-        allowNull: true,
-        validate: {
-            isAlpha: true,
-            notNull: false
-        }
+class Post extends BaseModel {
+
+    static get tableName() {
+        return config['db']['table_prefix'] + config['db']['table']['post'];
     }
-}, {
-    underscored: true,
-    timestamps: true
-});
+
+    static get jsonSchema() {
+        return {
+            type: 'object',
+            required: ['content', 'author', 'status'],
+            properties: {
+                content: { type: 'string', minLength: 8, maxLength: 10000 },
+                author: { type: 'number' },
+                status: { type: 'string' }
+            }
+        };
+    }
+
+    $beforeInsert(queryContext) {
+        let currMySQLDateTime = Util.getCurrMysqlDateTime();
+        this.created_at = currMySQLDateTime;
+        this.updated_at = currMySQLDateTime;
+    }
+
+    $beforeUpdate() {
+        this.updated_at = Util.getCurrMysqlDateTime();
+    }
+}
+
+Post.STATUS_PUBLISH = 'publish';
+Post.STATUS_HIDDEN = 'hidden';
+
+module.exports.Post = Post;

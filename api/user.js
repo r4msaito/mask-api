@@ -1,10 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
-const User = require('../controller/user');
-const ServiceHelper = require('../includes/service-helper');
-const BcryptHelper = require('../includes/bcrypt-helper');
-
+const { User } = include('models/user');
+const { ErrorLogger } = include('models/error-log');
+const { Util } = include('includes/util');
+const { JWTAuthenticator } = include('includes/jwt-authenticator');
+const { BcryptHelper } = include('includes/bcrypt-helper');
+const { DBErrorHandler } = include('includes/db-error-handler');
+const { constants } = include('includes/constants');
+const { config } = include('config/master');
 
 /*
  * Registration API
@@ -21,85 +25,148 @@ router.post('/', [
 
         return true;
     }),
-    check('pwd').not().isEmpty().withMessage('pwd must not be empty')
-    .isLength({ min: 6, max: 50 }).withMessage('pwd must be atleast 6 characters in length and 50 at max'),
+    check('pass').not().isEmpty().withMessage('pass must not be empty')
+    .isLength({ min: 6, max: 50 }).withMessage('pass must be atleast 6 characters in length and 50 at max')
 ], async(req, res, next) => {
     let resp = {};
+    let statusCode = 200;
     let valdErrs = validationResult(req);
     if (!valdErrs.isEmpty()) {
-        return ServiceHelper.die(res, {
+        return Util.die(res, {
             status: 'error',
             msg: valdErrs.array()[0].msg
         }, 400);
     }
 
-    let passHash = await BcryptHelper.hashPassword(req.body.pwd);
+    let passHash = await BcryptHelper.hashPassword(req.body.pass);
     if (passHash.length === 60) {
-        let newUser = await User.create({
+        await User.query().insert({
             user_name: req.body.user_name,
             pass: passHash
-        });
+        }).then((result) => {
+            resp.status = constants.API_STATUS_SUCCESS;
+            resp.msg = 'Successfully registered';
+            statusCode = 200;
+        }).catch((err) => {
+            let errStr = JSON.stringify(err);
+            if (errStr)
+                ErrorLogger.logError({
+                    error: errStr,
+                    file_info: 'registration api'
+                });
 
-        if (!newUser.hasOwnProperty('errors')) {
-            resp.status = 'success';
-            resp.msg = newUser.id;
-        } else {
-            resp.status = 'error';
-            resp.msg = newUser.errors[0].message;
+            let safeMsg = DBErrorHandler.getSafeErrorMessage(err);
+            resp.status = constants.API_STATUS_ERROR;
+            resp.msg = safeMsg;
+            statusCode = 500;
+        });
+    } else {
+        resp.status = constants.API_STATUS_ERROR;
+        resp.msg = 'Problem in registering. Please try again later';
+        statusCode = 200;
+    }
+
+    Util.die(res, resp, statusCode);
+});
+
+
+
+/*
+ * Authenticate API
+ */
+
+router.post('/authenticate', [
+    check('user_name').not().isEmpty().withMessage('user_name must not be empty')
+    .custom(val => {
+        var rgx = /[^A-Za-z0-9_]/g;
+
+        if (rgx.test(val))
+            throw new Error('user_name must contain propert characters');
+
+        return true;
+    }),
+    check('pass').not().isEmpty().withMessage('pass must not be empty')
+], async(req, res, next) => {
+    let resp = {
+        token: ''
+    };
+    let statusCode = 200;
+    let valdErrs = validationResult(req);
+    if (!valdErrs.isEmpty()) {
+        return Util.die(res, {
+            status: 'error',
+            msg: valdErrs.array()[0].msg
+        }, 400);
+    }
+
+    let loggedIn = await User.checkLogin(req.body.user_name, req.body.pass);
+    if (loggedIn !== false && typeof loggedIn === 'object') {
+        try {
+            let token = JWTAuthenticator.genJWT({
+                currentUserID: loggedIn.id,
+                user_name: loggedIn.user_name
+            });
+            resp.status = constants.API_STATUS_SUCCESS;
+            resp.msg = 'Successfully logged in!';
+            resp.token = token;
+        } catch (err) {
+            ErrorLogger.logError({
+                error: err.message,
+                file_info: 'user authenticate api'
+            });
+
+            resp.status = constants.API_STATUS_ERROR;
+            resp.msg = 'Unexpected problem in authentication. Please try again later.';
+            statusCode = 500;
         }
     } else {
-        resp.status = 'error';
-        resp.msg = 'problem in calculating pass hash';
+        resp.status = constants.API_STATUS_ERROR;
+        resp.msg = 'User name or password might be incorrect!'
     }
 
-    ServiceHelper.die(res, resp, 200);
+    Util.die(res, resp, statusCode);
 });
 
+
 /*
- * Delete API
+ * Checks whether user name exists
  */
 
-router.delete('/', [
-    check('id').not().isEmpty().withMessage('id must not be empty')
-    .isDecimal().withMessage('id must be an integer')
+router.get('/exists', [
+    check('user_name').not().isEmpty().withMessage('user_name must not be empty')
+    .custom(val => {
+        var rgx = /[^A-Za-z0-9_]/g;
+
+        if (rgx.test(val))
+            throw new Error('user_name must contain proper characters');
+
+        return true;
+    }),
 ], async(req, res, next) => {
-    let resp = {};
-    let valdErrs = validationResult(req);
-    if (!valdErrs.isEmpty()) {
-        return ServiceHelper.die(res, {
-            status: 'error',
-            msg: valdErrs.array()[0].msg
-        }, 400);
-    }
+    let resp = { found: false };
+    User.findUserByUserName(req.body.user_name).then((result) => {
+        resp.status = constants.API_STATUS_SUCCESS
+        if (result.length !== 0) {
+            resp.found = true;
+            resp.msg = 'User is present'
+        } else {
+            resp.msg = 'User does not exists';
+        }
+        
+        Util.die(res, resp, 200);
+    }).catch((err) => {
+        let errStr = JSON.stringify(err);
+        if (errStr)
+            ErrorLog.logError({
+                error: errStr,
+                file_info: 'user exists api'
+            });
 
-    let delUser = await User.delete(req.body.id);
-
-    if (delUser) {
-        resp.status = 'success';
-        resp.msg = req.body.id;
-    } else {
-        resp.status = 'error';
-    }
-
-    ServiceHelper.die(res, resp, 200);
+        resp.status = constants.API_STATUS_ERROR;
+        resp.msg = DBErrorHandler.getSafeErrorMessage(err);
+        Util.die(res, resp, 500);
+    });
 });
 
-/*
- * Login API
- */
-
-router.post('/login', [
-    check('user_name').not().isEmpty().withMessage('user_name must not be empty'),
-    check('pwd').not().isEmpty().withMessage('pwd must not be empty')
-], (req, res, next) => {
-    let valdErrs = validationResult(req);
-    if (!valdErrs.isEmpty()) {
-        return ServiceHelper.die(res, {
-            status: 'error',
-            msg: valdErrs.array()[0].msg
-        }, 400);
-    }
-
-});
 
 module.exports = router;
