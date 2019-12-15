@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
-const { User } = include('models/user');
-const { ErrorLogger } = include('models/error-log');
-const { Util } = include('includes/util');
-const { JWTAuthenticator } = include('includes/jwt-authenticator');
-const { BcryptHelper } = include('includes/bcrypt-helper');
-const { DBErrorHandler } = include('includes/db-error-handler');
-const { constants } = include('includes/constants');
-const { config } = include('config/master');
+const { User } = absRequire('models/user');
+const { ErrorLogger } = absRequire('models/error-log');
+const { Util } = absRequire('includes/util');
+const { JWTAuthenticator } = absRequire('includes/jwt-authenticator');
+const { BcryptHelper } = absRequire('includes/bcrypt-helper');
+const { DBErrorHandler } = absRequire('includes/db-error-handler');
+const { constants } = absRequire('includes/constants');
+const { config } = absRequire('config/master');
 
 /*
  * Registration API

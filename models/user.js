@@ -1,8 +1,8 @@
-const { BaseModel } = include('models/base-model');
-const { config } = include('config/master');
-const { Util } = include('includes/util');
-const { ErrorLogger } = include('models/error-log');
-const { BcryptHelper } = include('includes/bcrypt-helper');
+const { BaseModel } = absRequire('models/base-model');
+const { config } = absRequire('config/master');
+const { Util } = absRequire('includes/util');
+const { ErrorLogger } = absRequire('models/error-log');
+const { BcryptHelper } = absRequire('includes/bcrypt-helper');
 const { ValidationError } = require('objection');
 
 class User extends BaseModel {

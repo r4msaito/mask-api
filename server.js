@@ -2,7 +2,7 @@ global.base_dir = __dirname;
 global.abs_path = function (path) {
     return base_dir + path;
 }
-global.include = function (file) {
+global.absRequire = function (file) {
     return require(abs_path('/' + file));
 }
 
@@ -11,8 +11,8 @@ process.env.TZ = 'Asia/Kolkata';
 const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
-const { config } = include('config/master');
-const { Util } = include('includes/util');
+const { config } = absRequire('config/master');
+const { Util } = absRequire('includes/util');
 const router = express.Router();
 const app = express();
 

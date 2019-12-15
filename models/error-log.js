@@ -1,6 +1,6 @@
-const { BaseModel } = include('models/base-model');
-const { config } = include('config/master');
-const { DBErrorHandler } = include('includes/db-error-handler');
+const { BaseModel } = absRequire('models/base-model');
+const { config } = absRequire('config/master');
+const { DBErrorHandler } = absRequire('includes/db-error-handler');
 
 class ErrorLog extends BaseModel {
     static get tableName() {

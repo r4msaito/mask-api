@@ -1,5 +1,5 @@
-const { BaseModel } = include('models/base-model');
-const { config } = include('config/master');
+const { BaseModel } = absRequire('models/base-model');
+const { config } = absRequire('config/master');
 
 class PostCat extends BaseModel {
 

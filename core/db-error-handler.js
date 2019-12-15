@@ -1,4 +1,4 @@
-const { config } = include('config/master');
+const { config } = absRequire('config/master');
 const { ValidationError } = require('objection');
 const {
     DBError,
