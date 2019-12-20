@@ -1,45 +1,31 @@
-const { BaseModel } = include('models/base-model');
-const { config } = include('config/master');
-const { Util } = include('includes/util');
-const { ErrorLogger } = include('models/error-log');
-const { BcryptHelper } = include('includes/bcrypt-helper');
-const { ValidationError } = require('objection');
+const { Model } = absRequire('code/model/model');
+const { config } = absRequire('config/master');
+const { Util } = absRequire('includes/util');
+const { ErrorLogger } = absRequire('models/error-log');
+const { BcryptHelper } = absRequire('includes/bcrypt-helper');
 
-class User extends BaseModel {
+class User extends Model {
 
-    static get tableName() {
+    static getTableName() {
         return config['db']['table_prefix'] + config['db']['table']['user'];
     }
 
-    static get jsonSchema() {
-        return {
-            type: 'object',
-            required: ['user_name', 'pass'],
-            properties: {
-                id: { type: 'integer' },
-                user_name: { type: 'string', minLength: 3, maxLength: 60 },
-                pass: { type: 'string', minLength: 8, maxLength: 60 }
-            }
-        };
+    schema() {
+
     }
 
-    $beforeInsert() {
-        let currMySQLDateTime = Util.getCurrMysqlDateTime();
-        this.created_at = currMySQLDateTime;
-        this.updated_at = currMySQLDateTime;
-    }
-
-    $beforeUpdate() {
-        this.updated_at = Util.getCurrMysqlDateTime();
-    }
-
-    static async findUserByUserName(user_name) {
-        return await User.query().where('user_name', user_name);
+    columns() {
+        [
+            'user_name',
+            'pass',
+            'created_at',
+            'updated_at'
+        ];
     }
 
     static async checkLogin(user_name, pass) {
         return await User.findUserByUserName(User.sanitizeUserName(user_name))
-            .then(async (result) => {
+            .then(async(result) => {
                 if (result.length !== 0) {
                     let checkHash = await BcryptHelper.checkHash(pass, result[0].pass);
                     return (checkHash) ? result[0] : false;
@@ -59,25 +45,6 @@ class User extends BaseModel {
     static sanitizeUserName(user_name) {
         return user_name.replace(/[^A-Za-z0-9_]/g, '');
     }
-
-    static getAllowedDPExt() {
-        return [
-            'image/jpeg',
-            'image/png'
-        ];
-    }
-
-    static validateDP(file) {
-        if (file.size > User.DPMaxSize)
-            return false;
-        
-        if (!User.getAllowedDPExt().includes(file.type))
-            return false;
-
-        return true;
-    }
 }
-
-User.DPMaxSize = 3500;
 
 module.exports.User = User;

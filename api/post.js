@@ -2,15 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { check, validationResult, checkSchema } = require('express-validator');
 const { transaction } = require('objection');
-const { Util } = include('includes/util');
-const { Post } = include('models/post');
-const { PostCat } = include('models/post-cat');
-const { PostReact } = include('models/post-react');
-const { PostCatRel } = include('models/post-cat-rel');
-const { ErrorLogger } = include('models/error-log');
-const { DBErrorHandler } = include('includes/db-error-handler');
-const { JWTAuthenticator } = include('includes/jwt-authenticator');
-const { constants } = include('includes/constants');
+const { Util } = absRequire('includes/util');
+const { Post } = absRequire('models/post');
+const { PostCat } = absRequire('models/post-cat');
+const { PostReact } = absRequire('models/post-react');
+const { PostCatRel } = absRequire('models/post-cat-rel');
+const { ErrorLogger } = absRequire('models/error-log');
+const { DBErrorHandler } = absRequire('includes/db-error-handler');
+const { JWTAuthenticator } = absRequire('includes/jwt-authenticator');
+const { constants } = absRequire('includes/constants');
 
 /*
  * Add post

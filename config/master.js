@@ -1,5 +1,5 @@
-const { Util } = require('../includes/util');
-const { constants } = require('../includes/constants');
+const { Util } = require('../core/util');
+const { constants } = require('../core/constants');
 
 module.exports.config = (function () {
     let currEnv = Util.getCurrentEnvironment();

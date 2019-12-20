@@ -2,7 +2,7 @@ global.base_dir = __dirname;
 global.abs_path = function (path) {
     return base_dir + path;
 }
-global.include = function (file) {
+global.absRequire = function (file) {
     return require(abs_path('/' + file));
 }
 
@@ -11,11 +11,10 @@ process.env.TZ = 'Asia/Kolkata';
 const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
-const { config } = include('config/master');
-const { Util } = include('includes/util');
+const { config } = absRequire('config/master');
+const { Util } = absRequire('core/util');
 const router = express.Router();
 const app = express();
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -41,8 +40,8 @@ app.use(function (req, res, next) {
  * API Routes
  */
 
-app.use('/api/user', require('./api/user'));
-app.use('/api/post', require('./api/post'));
+// app.use('/api/user', require('./api/user'));
+// app.use('/api/post', require('./api/post'));
 
 
 /*
@@ -50,6 +49,12 @@ app.use('/api/post', require('./api/post'));
  */
 
 app.use(function (req, resp, next) {
+    const { MaskDBQuery } = absRequire('core/db/query');
+
+    let q = new MaskDBQuery();
+    q.select('*').from('mskx_user').execute().then((res) => {
+        console.log(res);
+    });
     return Util.die(resp, { status: 'error', msg: 'The resource you are trying to access does not exist' }, 404);
 });
 

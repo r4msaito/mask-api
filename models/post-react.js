@@ -1,7 +1,7 @@
-const { BaseModel } = include('models/base-model');
-const { config } = include('config/master');
-const { Util } = include('includes/util');
-const { constants } = include('includes/constants');
+const { BaseModel } = absRequire('models/base-model');
+const { config } = absRequire('config/master');
+const { Util } = absRequire('includes/util');
+const { constants } = absRequire('includes/constants');
 
 class PostReact extends BaseModel {
 
