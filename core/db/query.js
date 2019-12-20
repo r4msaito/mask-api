@@ -1,4 +1,5 @@
 const { maskDBConnection } = absRequire('core/db/connection');
+const { config } = absRequire('config/master');
 
 class MaskDBQuery {
     constructor() {
@@ -6,19 +7,43 @@ class MaskDBQuery {
         this.params = [];
     }
 
+    getParams() {
+        return this.params;
+    }
+
+    addParams(param) {
+        this.params.push(param);
+    }
+
+    setParams(p) {
+        return this.params = [];
+    }
+
+    getQuery() {
+        return this.query;
+    }
+
+    setQuery(q) {
+        return this.query = q;
+    }
+
+    addQuery(q) {
+        this.query += q;
+    }
+
     getRawQuery() {
-        
+        return this.query;
     }
 
     select(columns) {
         this.query += 'SELECT ';
 
         if (columns === '*') {
-            this.query += '* ';
+            this.addQuery('* ');
         } else {
             if (columns.length > 0) {
                 this.params = columns;
-                this.query += columns.fill('?', 0).split(', ');
+                this.addQuery(columns.split(', '));
             }
         }
 
@@ -26,49 +51,49 @@ class MaskDBQuery {
     }
 
     insert(table, columns, values) {
-        
-    }
-
-    update(table) {
-    }
-
-    delete() {
-
-    }
-
-    from(table) {
-        this.query = 'FROM ?';
-        this.params.push(table);
+        this.addQuery('INSERT INTO ' + table + ' (' + columns.split(',') + ') VALUES (?) ');
+        this.addParams(values);
         return this;
     }
 
-    where(logicalOp, conditions) {
-        let allowedLogicalOp = {
-            AND: 'AND',
-            OR: 'OR'
-        };
+    update(table, columns) {
+        let columnsKeysArr = Object.keys(columns);
+        this.query += 'UPDATE ' + table + ' ';
 
-        logicalOp = logicalOp.toUppserCase();
+        for (var i = 0; i < columnsKeysArr.length; i++) {
+            this.addQuery(columnsKeysArr[i] + '=?');
+            this.addParams(columns[columnsKeysArr[i]]);
+        }
 
-        if (conditions.length === 0)
+        return this;
+    }
+
+    delete() {
+        this.addQuery('DELETE ');
+        return this;
+    }
+
+    from(table) {
+        this.addQuery('FROM ?');
+        this.addParams(table);
+        return this;
+    }
+
+    where(condition) {
+        if (condition.length === 0)
             return this;
 
         if (this.query.length === 0)
             this.query += 'WHERE ';
 
-        conditions.forEach((condition, idx) => {
-            if (idx > 0)
-                this.query += allowedLogicalOp[logicalOp];
-
-            this.query += condition[0] + ' ' + condition[1] + ' ' +  + '? ';
-            this.params.push(condition[2]);
-        });
+        this.addQuery(condition[0] + ' ' + condition[1] + ' ' + +'? ');
+        this.addParams(condition[2]);
 
         return this;
     }
 
     groupBy(column) {
-        this.query += 'GROUP BY ' + column;
+        this.addQuery('GROUP BY ' + column);
         return this;
     }
 
@@ -79,9 +104,9 @@ class MaskDBQuery {
             DESC: 'DESC'
         };
 
-        this.query += 'ORDER BY ' + column;
+        this.addQuery('ORDER BY ' + column);
         if (order)
-            this.query += ' ' + allowedOrders[order];
+            this.addQuery(' ' + allowedOrders[order]);
     }
 
     limit() {
@@ -89,20 +114,38 @@ class MaskDBQuery {
         return this;
     }
 
-    raw(query, args) {
-
+    raw(query) {
+        this.addQuery(query);
+        this.setParams([])
+        return this;
     }
 
     execute() {
-        this._resetQuery();
+        let q = this.getQuery();
+        let p = this.getParams();
+        this._clearQueryParams();
+
+        return maskDBConnection.then((connection) => {
+            console.log(q);
+            console.log(p);
+            let c = connection.query(q, p);
+            connection.end();
+            return c;
+        }).then((rows) => {
+            console.log(rows.sql);
+            if (rows.length > 1)
+                return rows[0];
+
+            return rows;
+        }).catch((err) => {
+            console.log(err);
+            return err;
+        });
     }
 
-    _bindParams() {
-
-    }
-
-    _resetQuery() {
-        this.query = '';
+    _clearQueryParams() {
+        this.setQuery('');
+        this.setParams([]);
     }
 }
 
