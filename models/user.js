@@ -1,8 +1,8 @@
-const { Model } = absRequire('code/model/model');
+const { Model } = absRequire('core/model/model');
 const { config } = absRequire('config/master');
-const { Util } = absRequire('includes/util');
-const { ErrorLogger } = absRequire('models/error-log');
-const { BcryptHelper } = absRequire('includes/bcrypt-helper');
+const { Util } = absRequire('core/util');
+const { ErrorLogger } = absRequire('models/error-logger');
+const { BcryptHelper } = absRequire('core/bcrypt-helper');
 
 class User extends Model {
 
@@ -11,16 +11,50 @@ class User extends Model {
     }
 
     schema() {
-
+        return {
+            user_name: {
+                required: true,
+                type: 'string',
+                min: 3,
+                max: 60
+            },
+            pass: {
+                required: true,
+                type: 'string',
+                min: 60,
+                max: 60
+            },
+            created_at: {
+                required: true,
+                type: 'date',
+                format: ''
+            },
+            updated_at: {
+                required: true,
+                type: 'date',
+                format: ''
+            }
+        }
     }
 
     columns() {
-        [
+        return [
             'user_name',
             'pass',
             'created_at',
             'updated_at'
         ];
+    }
+
+    beforeInsert() {
+        console.log('inside before insert');
+        let currMySQLDateTime = Util.getCurrMysqlDateTime();
+        this.created_at = currMySQLDateTime;
+        this.updated_at = currMySQLDateTime;
+    }
+
+    static findUserByUserName(userName) {
+        return User.find(['user_name', '=', userName]);
     }
 
     static async checkLogin(user_name, pass) {
@@ -31,14 +65,7 @@ class User extends Model {
                     return (checkHash) ? result[0] : false;
                 }
             }).catch((err) => {
-                let errStr = DBErrorHandler.getSafeErrorMessage(err);
-                if (errStr)
-                    ErrorLogger.logError({
-                        error: errStr,
-                        file_info: 'user.js checkLogin'
-                    });
-
-                return false;
+                console.log(err);
             });
     }
 

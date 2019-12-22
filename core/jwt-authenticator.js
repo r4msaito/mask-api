@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-const { Util } = absRequire('includes/util');
-const { constants } = absRequire('includes/constants');
+const { Util } = absRequire('core/util');
+const { constants } = absRequire('core/constants');
 
 class JWTAuthenticator {
     static authenticate(req, res, next) {

@@ -3,8 +3,8 @@ const { config } = absRequire('config/master');
 
 class MaskDBQuery {
     constructor() {
-        this.query = '';
-        this.params = [];
+        this.setQuery('');
+        this.setParams([]);
     }
 
     getParams() {
@@ -27,7 +27,7 @@ class MaskDBQuery {
         return this.query = q;
     }
 
-    addQuery(q) {
+    appendQuery(q) {
         this.query += q;
     }
 
@@ -35,23 +35,21 @@ class MaskDBQuery {
         return this.query;
     }
 
-    select(columns) {
-        this.query += 'SELECT ';
 
-        if (columns === '*') {
-            this.addQuery('* ');
-        } else {
-            if (columns.length > 0) {
-                this.params = columns;
-                this.addQuery(columns.split(', '));
-            }
+
+    select(columns) {
+        if (typeof columns === 'string' && columns === '*') {
+            this.appendQuery('SELECT * ');
+        } else if (typeof columns === 'object' && columns.length > 0) {
+            this.appendQuery('SELECT ');
+            this.appendQuery(columns.join(', ') + ' ');
         }
 
         return this;
     }
 
     insert(table, columns, values) {
-        this.addQuery('INSERT INTO ' + table + ' (' + columns.split(',') + ') VALUES (?) ');
+        this.appendQuery('INSERT INTO ' + table + ' (' + columns.split(',') + ') VALUES (?) ');
         this.addParams(values);
         return this;
     }
@@ -61,7 +59,7 @@ class MaskDBQuery {
         this.query += 'UPDATE ' + table + ' ';
 
         for (var i = 0; i < columnsKeysArr.length; i++) {
-            this.addQuery(columnsKeysArr[i] + '=?');
+            this.appendQuery(columnsKeysArr[i] + '=?');
             this.addParams(columns[columnsKeysArr[i]]);
         }
 
@@ -69,31 +67,31 @@ class MaskDBQuery {
     }
 
     delete() {
-        this.addQuery('DELETE ');
+        this.appendQuery('DELETE ');
         return this;
     }
 
     from(table) {
-        this.addQuery('FROM ?');
-        this.addParams(table);
+        this.appendQuery('FROM ' + table + ' ');
         return this;
     }
 
     where(condition) {
-        if (condition.length === 0)
+        if (typeof condition !== 'object' || Object.keys(condition).length === 0)
             return this;
 
-        if (this.query.length === 0)
-            this.query += 'WHERE ';
+        let q = '';
+        if (condition[3].length === 0)
+            q += 'WHERE ';
 
-        this.addQuery(condition[0] + ' ' + condition[1] + ' ' + +'? ');
+        q += condition[0] + ' ' + condition[1] + ' ? ';
         this.addParams(condition[2]);
-
+        this.appendQuery(q);
         return this;
     }
 
     groupBy(column) {
-        this.addQuery('GROUP BY ' + column);
+        this.appendQuery('GROUP BY ' + column);
         return this;
     }
 
@@ -104,9 +102,9 @@ class MaskDBQuery {
             DESC: 'DESC'
         };
 
-        this.addQuery('ORDER BY ' + column);
+        this.appendQuery('ORDER BY ' + column);
         if (order)
-            this.addQuery(' ' + allowedOrders[order]);
+            this.appendQuery(' ' + allowedOrders[order]);
     }
 
     limit() {
@@ -115,7 +113,7 @@ class MaskDBQuery {
     }
 
     raw(query) {
-        this.addQuery(query);
+        this.appendQuery(query);
         this.setParams([])
         return this;
     }
@@ -125,21 +123,15 @@ class MaskDBQuery {
         let p = this.getParams();
         this._clearQueryParams();
 
-        return maskDBConnection.then((connection) => {
-            console.log(q);
-            console.log(p);
-            let c = connection.query(q, p);
-            connection.end();
-            return c;
-        }).then((rows) => {
-            console.log(rows.sql);
-            if (rows.length > 1)
-                return rows[0];
+        return new Promise((resolve, reject) => {
+            maskDBConnection.query(q, p, (err, result) => {
+                if (err)
+                    reject(err);
 
-            return rows;
-        }).catch((err) => {
-            console.log(err);
-            return err;
+                resolve(result);
+            });
+
+            maskDBConnection.end();
         });
     }
 

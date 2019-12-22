@@ -49,6 +49,22 @@ class Model {
 
     }
 
+    beforeInsert() {
+        console.log('inside beforeInsert base');
+    }
+
+    afterInsert() {
+
+    }
+
+    beforeUpdate() {
+
+    }
+
+    afterUpdate() {
+
+    }
+
     getModelObject() {
         let obj = {};
         let columns = this.columns();
@@ -67,26 +83,37 @@ class Model {
 
     save() {
         //validate model
-        if (!this.validate())
-            return this.getValid();
+        return new Promise((resolve, reject) => {
+            if (!this.validate())
+                resolve(this.getValid());
 
-        if (this.new) {
-            let _this = this;
-            let query = new maskDBQuery();
-            return query.insert(this.getTableName(), this.getModelObject()).execute().then((result) => {
-                _this[this.getIDColumn()] = result[_this.getIDColumn()];
-                _this.new = false;
-                return result;
-            }).catch((err) => {
-                console.log(err);
-            });
-        } else {
-            return query.update(this.getTableName(), this.getModelObject()).execute();
-        }
+            if (this.new) {
+                let _this = this;
+                let query = new maskDBQuery();
+                this.beforeInsert();
+                return query.insert(this.getTableName(), this.getModelObject()).execute().then((result) => {
+                    _this[this.getIDColumn()] = result[_this.getIDColumn()];
+                    _this.new = false;
+                    _this.afterInsert();
+                    resolve(result);
+                }).catch((err) => {
+                    console.log(err);
+                    reject(err);
+                });
+            } else {
+                this.beforeUpdate();
+                query.update(this.getTableName(), this.getModelObject()).execute().then((updateResult) => {
+                    resolve(updateResult);
+                    this.afterUpdate();
+                }).catch((updateErr) => {
+                    reject(updateErr);
+                });
+            }
+        });
     }
 
     patch() {
-        
+
     }
 
     delete() {
@@ -98,13 +125,14 @@ class Model {
         let bind = false;
         if (typeof conditions === 'number') {
             bind = true;
-            whr = [this.getIDColumn(), '=', this[this.getIDColumn()]];
+            whr = [this.getIDColumn(), '=', condition];
         } else if (typeof conditions === 'object') {
             whr = condition;
         }
         return (new maskDBQuery()).select().from(this.getTableName()).where(whr).execute().then((result) => {
             if (bind === true && result.length > 0) {
                 let model = new Model();
+
                 model.bindModelObjectProperties(result);
                 return model;
             } else {
@@ -114,6 +142,8 @@ class Model {
     }
 
     bindModelObjectProperties(properties) {
+        console.log('inside bindModelObjectProperties');
+        console.log(properties);
         let propertyKeys = Object.keys(properties);
 
         for (var i = 0; i < propertyKeys; i++)
