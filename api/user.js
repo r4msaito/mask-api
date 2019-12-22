@@ -1,72 +1,79 @@
 const express = require('express');
 const router = express.Router();
-const { check, validationResult } = require('express-validator');
 const { User } = absRequire('models/user');
-const { ErrorLogger } = absRequire('models/error-log');
-const { Util } = absRequire('includes/util');
-const { JWTAuthenticator } = absRequire('includes/jwt-authenticator');
-const { BcryptHelper } = absRequire('includes/bcrypt-helper');
-const { DBErrorHandler } = absRequire('includes/db-error-handler');
-const { constants } = absRequire('includes/constants');
-const { config } = absRequire('config/master');
+const { ErrorLogger } = absRequire('models/error-logger');
+const { Util } = absRequire('core/util');
+const { JWTAuthenticator } = absRequire('core/jwt-authenticator');
+const { BcryptHelper } = absRequire('core/bcrypt-helper');
+const { constants } = absRequire('core/constants');
 
 /*
  * Registration API
  */
 
 router.post('/', [
-    check('user_name').not().isEmpty().withMessage('user_name must not be empty')
-    .isLength({ min: 3, max: 50 }).withMessage('user_name must be atleast 3 characters in length and 50 at max')
-    .custom(val => {
-        var rgx = /[^A-Za-z0-9_]/g;
+    (req, res, next) => {
+        let schema = {
+            user_name: {
+                required: true,
+                type: 'string',
+                min: 3,
+                max: 50,
+                custom: {
+                    f: (userName) => {
+                        var rgx = /[^A-Za-z0-9_]/g;
+                        if (rgx.test(userName))
+                            return false
 
-        if (rgx.test(val))
-            throw new Error('user_name can contain only alphabet, numbers or underscore');
-
-        return true;
-    }),
-    check('pass').not().isEmpty().withMessage('pass must not be empty')
-    .isLength({ min: 6, max: 50 }).withMessage('pass must be atleast 6 characters in length and 50 at max')
+                        return true;
+                    },
+                    msg: 'user_name can contain only alphabet, numbers or underscore'
+                }
+            },
+            pass: {
+                required: true,
+                type: 'string',
+                min: 6,
+                max: 50
+            }
+        };
+        let model = {
+            user_name: req.body.user_name,
+            pass: req.body.pass
+        };
+        let validation = Util.validateSchema(schema, model);
+        if (!validation.valid) {
+            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+        } else {
+            next();
+        }
+    }
 ], async(req, res, next) => {
     let resp = {};
-    let statusCode = 200;
-    let valdErrs = validationResult(req);
-    if (!valdErrs.isEmpty()) {
-        return Util.die(res, {
-            status: 'error',
-            msg: valdErrs.array()[0].msg
-        }, 400);
-    }
-
     let passHash = await BcryptHelper.hashPassword(req.body.pass);
     if (passHash.length === 60) {
-        await User.query().insert({
-            user_name: req.body.user_name,
-            pass: passHash
-        }).then((result) => {
+        let user = new User();
+        user.user_name = req.body.user_name;
+        user.pass = passHash;
+        //validate
+        user.save().then((result) => {
+            console.log(result);
             resp.status = constants.API_STATUS_SUCCESS;
             resp.msg = 'Successfully registered';
-            statusCode = 200;
+            console.log(user);
+            Util.die(res, resp, 200);
         }).catch((err) => {
-            let errStr = JSON.stringify(err);
-            if (errStr)
-                ErrorLogger.logError({
-                    error: errStr,
-                    file_info: 'registration api'
-                });
-
-            let safeMsg = DBErrorHandler.getSafeErrorMessage(err);
+            console.log(err);
             resp.status = constants.API_STATUS_ERROR;
-            resp.msg = safeMsg;
-            statusCode = 500;
+            resp.msg = 'Problem in registration. Please try again later.';
+            Util.die(res, resp, 500);
         });
+
     } else {
         resp.status = constants.API_STATUS_ERROR;
         resp.msg = 'Problem in registering. Please try again later';
-        statusCode = 200;
+        Util.die(res, resp, 200);
     }
-
-    Util.die(res, resp, statusCode);
 });
 
 
@@ -76,29 +83,42 @@ router.post('/', [
  */
 
 router.post('/authenticate', [
-    check('user_name').not().isEmpty().withMessage('user_name must not be empty')
-    .custom(val => {
-        var rgx = /[^A-Za-z0-9_]/g;
+    (req, res, next) => {
+        let schema = {
+            user_name: {
+                required: true,
+                type: 'string',
+                custom: {
+                    f: (value) => {
+                        var rgx = /[^A-Za-z0-9_]/g;
+                        if (rgx.test(value))
+                            return false;
 
-        if (rgx.test(val))
-            throw new Error('user_name must contain propert characters');
-
-        return true;
-    }),
-    check('pass').not().isEmpty().withMessage('pass must not be empty')
+                        return true;
+                    },
+                    msg: 'user_name must contain propert characters'
+                }
+            },
+            pass: {
+                required: true,
+                type: 'string',
+                min: 3,
+                max: 50
+            }
+        };
+        let model = {};
+        let validation = Util.validateSchema(schema, model);
+        if (!validation.valid) {
+            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+        } else {
+            next();
+        }
+    }
 ], async(req, res, next) => {
     let resp = {
         token: ''
     };
     let statusCode = 200;
-    let valdErrs = validationResult(req);
-    if (!valdErrs.isEmpty()) {
-        return Util.die(res, {
-            status: 'error',
-            msg: valdErrs.array()[0].msg
-        }, 400);
-    }
-
     let loggedIn = await User.checkLogin(req.body.user_name, req.body.pass);
     if (loggedIn !== false && typeof loggedIn === 'object') {
         try {
@@ -133,15 +153,31 @@ router.post('/authenticate', [
  */
 
 router.get('/exists', [
-    check('user_name').not().isEmpty().withMessage('user_name must not be empty')
-    .custom(val => {
-        var rgx = /[^A-Za-z0-9_]/g;
+    (req, res, next) => {
+        let schema = {
+            user_name: {
+                required: true,
+                type: 'string',
+                custom: {
+                    f: (val) => {
+                        var rgx = /[^A-Za-z0-9_]/g;
+                        if (rgx.test(val))
+                            return false
 
-        if (rgx.test(val))
-            throw new Error('user_name must contain proper characters');
-
-        return true;
-    }),
+                        return true;
+                    },
+                    msg: 'user_name must contain proper characters'
+                }
+            },
+        };
+        let model = {};
+        let validation = Util.validateSchema(schema, model);
+        if (!validation.valid) {
+            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+        } else {
+            next();
+        }
+    }
 ], async(req, res, next) => {
     let resp = { found: false };
     User.findUserByUserName(req.body.user_name).then((result) => {
@@ -152,7 +188,7 @@ router.get('/exists', [
         } else {
             resp.msg = 'User does not exists';
         }
-        
+
         Util.die(res, resp, 200);
     }).catch((err) => {
         let errStr = JSON.stringify(err);
@@ -163,7 +199,7 @@ router.get('/exists', [
             });
 
         resp.status = constants.API_STATUS_ERROR;
-        resp.msg = DBErrorHandler.getSafeErrorMessage(err);
+        resp.msg = 'sdf';
         Util.die(res, resp, 500);
     });
 });

@@ -40,7 +40,7 @@ app.use(function (req, res, next) {
  * API Routes
  */
 
-// app.use('/api/user', require('./api/user'));
+app.use('/api/user', require('./api/user'));
 // app.use('/api/post', require('./api/post'));
 
 
@@ -48,13 +48,7 @@ app.use(function (req, res, next) {
  * Router handler for non-existent resource - 404 response
  */
 
-app.use(function (req, resp, next) {
-    const { MaskDBQuery } = absRequire('core/db/query');
-
-    let q = new MaskDBQuery();
-    q.select('*').from('mskx_user').execute().then((res) => {
-        console.log(res);
-    });
+app.use((req, resp) => {
     return Util.die(resp, { status: 'error', msg: 'The resource you are trying to access does not exist' }, 404);
 });
 

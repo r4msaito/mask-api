@@ -1,8 +1,7 @@
-const { BaseModel } = absRequire('models/base-model');
+const { Model } = absRequire('core/model/model');
 const { config } = absRequire('config/master');
-const { DBErrorHandler } = absRequire('includes/db-error-handler');
 
-class ErrorLog extends BaseModel {
+class ErrorLogger extends Model {
     static get tableName() {
         return config['db']['table_prefix'] + config['db']['table']['error_log'];
     }
@@ -28,4 +27,4 @@ class ErrorLog extends BaseModel {
     }
 }
 
-module.exports.ErrorLogger = ErrorLog;
+module.exports.ErrorLogger = ErrorLogger;

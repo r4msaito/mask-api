@@ -1,14 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { check, validationResult, checkSchema } = require('express-validator');
-const { transaction } = require('objection');
 const { Util } = absRequire('includes/util');
 const { Post } = absRequire('models/post');
 const { PostCat } = absRequire('models/post-cat');
 const { PostReact } = absRequire('models/post-react');
 const { PostCatRel } = absRequire('models/post-cat-rel');
-const { ErrorLogger } = absRequire('models/error-log');
-const { DBErrorHandler } = absRequire('includes/db-error-handler');
+const { ErrorLogger } = absRequire('models/error-logger');
 const { JWTAuthenticator } = absRequire('includes/jwt-authenticator');
 const { constants } = absRequire('includes/constants');
 
@@ -18,27 +15,44 @@ const { constants } = absRequire('includes/constants');
 
 router.post('/', [
     JWTAuthenticator.authenticate,
-    check('content').not().isEmpty().withMessage('content must not be empty')
-    .isLength({ min: 8, max: 10000 }).withMessage('content must be atleast 8 characters in length and 10000 at max'),
-    check('post_cats').custom(postCatVal => {
-        if (postCatVal === undefined)
-            return true;
+    (req, res, next) => {
+        let schema = {
+            content: {
+                required: true,
+                type: 'string',
+                min: 8,
+                max: 10000
+            },
+            post_cats: {
+                type: 'string',
+                custom: {
+                    f: (postCatsValue) => {
+                        if (postCatsValue === undefined)
+                            return true;
 
-        if (!PostCat.validatePostCatInput(postCatVal))
-            throw new Error('post_cats should be comma separated values and it can contain only numbers');
+                        if (!PostCat.validatePostCatInput(postCatVal))
+                            return false
 
-        return true;
-    })
+                        return true;
+                    },
+                    msg: 'post_cats should be comma separated values and it can contain only numbers'
+                }
+            }
+        };
+        let model = {
+            content: req.body.content,
+            post_cats: req.body.post_cats
+        };
+
+        let validation = Util.validateSchema(schema, model);
+        if (!validation.valid) {
+            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+        } else {
+            next();
+        }
+    }
 ], (req, res, next) => {
     let resp = {};
-    let valdErrs = validationResult(req);
-    if (!valdErrs.isEmpty()) {
-        return Util.die(res, {
-            status: 'error',
-            msg: valdErrs.array()[0].msg
-        }, 400);
-    }
-
     Post.query().insert({
         content: req.body.content,
         author: req.jwtData.currentUserID,
@@ -69,34 +83,46 @@ router.post('/', [
 
 router.patch('/:id', [
     JWTAuthenticator.authenticate,
-    checkSchema({
-        id: { in: ['params'],
-            errorMessage: 'id must contain post id',
-            isInt: true,
-            toInt: true
+    (req, res, next) => {
+        let schema = {
+            id: {
+                required: true,
+                type: 'int'
+            },
+            content: {
+                required: true,
+                type: 'string',
+                min: 8,
+                max: 10000
+            },
+            custom: {
+                f: (postCatsValue) => {
+                    if (postCatsValue === undefined)
+                        return true;
+
+                    if (!PostCat.validatePostCatInput(postCatVal))
+                        return false
+
+                    return true;
+                },
+                msg: 'post_cats should be comma separated values and it can contain only numbers'
+            }
+        };
+        let model = {
+            id: req.params.id,
+            content: req.body.content,
+            post_cats: req.body.post_cats
+        };
+
+        let validation = Util.validateSchema(schema, model);
+        if (!validation.valid) {
+            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+        } else {
+            next();
         }
-    }),
-    check('content').not().isEmpty().withMessage('content must not be empty')
-    .isLength({ min: 8, max: 10000 }).withMessage('content must be atleast 8 characters in length and 10000 at max'),
-    check('post_cats').custom(postCatVal => {
-        if (postCatVal === undefined)
-            return true;
-
-        if (!PostCat.validatePostCatInput(postCatVal))
-            throw new Error('post_cats should be comma separated values and it can contain only numbers');
-
-        return true;
-    })
+    }
 ], (req, res, next) => {
     let resp = {};
-    let valdErrs = validationResult(req);
-    if (!valdErrs.isEmpty()) {
-        return Util.die(res, {
-            status: 'error',
-            msg: valdErrs.array()[0].msg
-        }, 400);
-    }
-
     try {
         transaction(Post.knex(), (trx) => {
             Post.query(trx).findById(req.params.id).patch({
@@ -146,16 +172,8 @@ router.get('/cats', [], (req, res, next) => {
 router.post('/react', [
     JWTAuthenticator.authenticate,
     PostReact.validateReactType,
-    check('id').not().isEmpty().withMessage('id must not be empty').isInt().withMessage('id must be an integer').toInt()
 ], (req, res, next) => {
     let valdErrs = validationResult(req);
-    if (!valdErrs.isEmpty()) {
-        return Util.die(res, {
-            status: 'error',
-            msg: valdErrs.array()[0].msg
-        }, 400);
-    }
-
     let resp = {};
     PostReact.react(req.body.id, req.jwtData.currentUserID, req.body.type).then((reacted) => {
         resp.status = constants.API_STATUS_SUCCESS;
