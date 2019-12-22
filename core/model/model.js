@@ -7,34 +7,35 @@ class Model {
         this.setValidMsg('');
         this.setNew(isNew);
         this.bindModelObjectProperties(this.columns());
+        console.log(Model.getTableName());
     }
 
     getValid() {
-        return this.valid;
+        return this._valid;
     }
 
     setValid(valid) {
-        return this.valid = valid;
+        return this._valid = valid;
     }
 
     getValidMsg() {
-        return this.validMsg;
+        return this._validMsg;
     }
 
     setValidMsg(msg) {
-        this.validMsg = msg;
+        this._validMsg = msg;
     }
 
     setNew(isNew) {
-        this.new = isNew;
+        this._new = isNew;
     }
 
     isNew() {
-        return this.new;
+        return this._new;
     }
 
-    getTableName() {
-
+    static getTableName() {
+    
     }
 
     schema() {
@@ -50,7 +51,7 @@ class Model {
     }
 
     beforeInsert() {
-        console.log('inside beforeInsert base');
+
     }
 
     afterInsert() {
@@ -76,33 +77,29 @@ class Model {
 
     validate() {
         let validationResult = Util.validateSchema(this.schema(), this);
-        this.valid = validationResult.valid;
-        this.validMsg = validationResult.msg;
-        return this.valid;
+        this._valid = validationResult.valid;
+        this._validMsg = validationResult.msg;
+        return this._valid;
     }
 
     save() {
         //validate model
         return new Promise((resolve, reject) => {
-            if (!this.validate())
-                resolve(this.getValid());
-
-            if (this.new) {
+            if (this._new) {
                 let _this = this;
-                let query = new maskDBQuery();
+                let query = new MaskDBQuery();
                 this.beforeInsert();
-                return query.insert(this.getTableName(), this.getModelObject()).execute().then((result) => {
+                return query.insert(Model.getTableName(), this.getModelObject()).execute().then((result) => {
                     _this[this.getIDColumn()] = result[_this.getIDColumn()];
-                    _this.new = false;
+                    _this._new = false;
                     _this.afterInsert();
                     resolve(result);
                 }).catch((err) => {
-                    console.log(err);
                     reject(err);
                 });
             } else {
                 this.beforeUpdate();
-                query.update(this.getTableName(), this.getModelObject()).execute().then((updateResult) => {
+                query.update(Model.getTableName(), this.getModelObject()).execute().then((updateResult) => {
                     resolve(updateResult);
                     this.afterUpdate();
                 }).catch((updateErr) => {
@@ -117,7 +114,7 @@ class Model {
     }
 
     delete() {
-        return (new maskDBQuery()).delete().from(this.getTableName()).where([this.getIDColumn(), '=', this[this.getIDColumn()]]);
+        return (new MaskDBQuery()).delete().from(Model.getTableName()).where([this.getIDColumn(), '=', this[this.getIDColumn()]]);
     }
 
     static find(condition) {
@@ -129,10 +126,9 @@ class Model {
         } else if (typeof conditions === 'object') {
             whr = condition;
         }
-        return (new maskDBQuery()).select().from(this.getTableName()).where(whr).execute().then((result) => {
+        return (new MaskDBQuery()).select().from(Model.getTableName()).where(whr).execute().then((result) => {
             if (bind === true && result.length > 0) {
-                let model = new Model();
-
+                let model = new Model(false);
                 model.bindModelObjectProperties(result);
                 return model;
             } else {
@@ -142,8 +138,6 @@ class Model {
     }
 
     bindModelObjectProperties(properties) {
-        console.log('inside bindModelObjectProperties');
-        console.log(properties);
         let propertyKeys = Object.keys(properties);
 
         for (var i = 0; i < propertyKeys; i++)

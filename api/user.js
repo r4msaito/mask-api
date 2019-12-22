@@ -50,32 +50,12 @@ router.post('/', [
     }
 ], async(req, res, next) => {
     let resp = {};
-    console.log('not here');
     let passHash = await BcryptHelper.hashPassword(req.body.pass);
     if (passHash.length === 60) {
-        // await User.query().insert({
-        //     user_name: req.body.user_name,
-        //     pass: passHash
-        // }).then((result) => {
-        //     resp.status = constants.API_STATUS_SUCCESS;
-        //     resp.msg = 'Successfully registered';
-        //     statusCode = 200;
-        // }).catch((err) => {
-        //     let errStr = JSON.stringify(err);
-        //     if (errStr)
-        //         ErrorLogger.logError({
-        //             error: errStr,
-        //             file_info: 'registration api'
-        //         });
-
-        //     resp.status = constants.API_STATUS_ERROR;
-        //     resp.msg = 'safeMsg';
-        //     statusCode = 500;
-        // });
-
         let user = new User();
         user.user_name = req.body.user_name;
         user.pass = passHash;
+        //validate
         user.save().then((result) => {
             console.log(result);
             resp.status = constants.API_STATUS_SUCCESS;
@@ -84,7 +64,7 @@ router.post('/', [
             Util.die(res, resp, 200);
         }).catch((err) => {
             console.log(err);
-            resp.status = constants.API_STATUS_SUCCESS;
+            resp.status = constants.API_STATUS_ERROR;
             resp.msg = 'Problem in registration. Please try again later.';
             Util.die(res, resp, 500);
         });

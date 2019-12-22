@@ -47,10 +47,13 @@ class User extends Model {
     }
 
     beforeInsert() {
-        console.log('inside before insert');
         let currMySQLDateTime = Util.getCurrMysqlDateTime();
         this.created_at = currMySQLDateTime;
         this.updated_at = currMySQLDateTime;
+    }
+
+    beforeUpdate() {
+        this.updated_at = Util.getCurrMysqlDateTime();
     }
 
     static findUserByUserName(userName) {

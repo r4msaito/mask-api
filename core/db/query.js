@@ -35,8 +35,6 @@ class MaskDBQuery {
         return this.query;
     }
 
-
-
     select(columns) {
         if (typeof columns === 'string' && columns === '*') {
             this.appendQuery('SELECT * ');
@@ -48,9 +46,15 @@ class MaskDBQuery {
         return this;
     }
 
-    insert(table, columns, values) {
-        this.appendQuery('INSERT INTO ' + table + ' (' + columns.split(',') + ') VALUES (?) ');
-        this.addParams(values);
+    insert(table, columnValueMap) {
+        console.log(table);
+        //console.log(columnValueMap);
+        let columns = Object.keys(columnValueMap);
+        let values = Object.values(columnValueMap);
+        //console.log(columns);
+        //console.log(values);
+        this.appendQuery('INSERT INTO ' + table + ' (' + columns.join(',') + ') VALUES (?) ');
+        this.addParams(values.join(', '));
         return this;
     }
 
