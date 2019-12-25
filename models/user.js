@@ -5,7 +5,6 @@ const { ErrorLogger } = absRequire('models/error-logger');
 const { BcryptHelper } = absRequire('core/bcrypt-helper');
 
 class User extends Model {
-
     static getTableName() {
         return config['db']['table_prefix'] + config['db']['table']['user'];
     }
@@ -57,23 +56,30 @@ class User extends Model {
     }
 
     static findUserByUserName(userName) {
-        return User.find(['user_name', '=', userName]);
+        return this.find(['user_name', '=', userName]);
     }
 
-    static async checkLogin(user_name, pass) {
-        return await User.findUserByUserName(User.sanitizeUserName(user_name))
-            .then(async(result) => {
-                if (result.length !== 0) {
-                    let checkHash = await BcryptHelper.checkHash(pass, result[0].pass);
-                    return (checkHash) ? result[0] : false;
-                }
-            }).catch((err) => {
-                console.log(err);
-            });
+    static tryLoggingIn(userName, pass) {
+        // return await User.findUserByUserName(User.sanitizeUserName(user_name))
+        //     .then(async(result) => {
+        //         if (result.length !== 0) {
+        //             let checkHash = await BcryptHelper.checkHash(pass, result[0].pass);
+        //             return (checkHash) ? result[0] : false;
+        //         }
+        //     }).catch((err) => {
+        //         console.log(err);
+        //     });
+
+        return this.findUserByUserName(User.sanitizeUserName(userName), pass).then((result) => {
+            console.log('inside result');
+            console.log(result);
+        }).catch((err) => {
+            console.log(err);
+        });
     }
 
-    static sanitizeUserName(user_name) {
-        return user_name.replace(/[^A-Za-z0-9_]/g, '');
+    static sanitizeUserName(userName) {
+        return userName.replace(/[^A-Za-z0-9_]/g, '');
     }
 }
 

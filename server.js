@@ -41,7 +41,7 @@ app.use(function (req, res, next) {
  */
 
 app.use('/api/user', require('./api/user'));
-// app.use('/api/post', require('./api/post'));
+//app.use('/api/post', require('./api/post'));
 
 
 /*
