@@ -11,12 +11,16 @@ class MaskDBQuery {
         return this.params;
     }
 
-    addParams(param) {
+    appendParams(param) {
         this.params.push(param);
     }
 
+    mergeParams(p) {
+        this.params = this.params.concat(p);
+    }
+
     setParams(p) {
-        return this.params = [];
+        this.params = p;
     }
 
     getQuery() {
@@ -36,7 +40,7 @@ class MaskDBQuery {
     }
 
     select(columns) {
-        if (typeof columns === 'string' && columns === '*') {
+        if (columns === undefined || columns === '*') {
             this.appendQuery('SELECT * ');
         } else if (typeof columns === 'object' && columns.length > 0) {
             this.appendQuery('SELECT ');
@@ -47,14 +51,14 @@ class MaskDBQuery {
     }
 
     insert(table, columnValueMap) {
-        console.log(table);
-        //console.log(columnValueMap);
         let columns = Object.keys(columnValueMap);
-        let values = Object.values(columnValueMap);
-        //console.log(columns);
-        //console.log(values);
-        this.appendQuery('INSERT INTO ' + table + ' (' + columns.join(',') + ') VALUES (?) ');
-        this.addParams(values.join(', '));
+        let values = Object.values(columnValueMap)
+        let valuesPlaceHolderArr = [];
+        for (var i = 0; i < values.length; i++)
+            valuesPlaceHolderArr.push('?');
+
+        this.appendQuery('INSERT INTO ' + table + ' (' + columns.join(',') + ') VALUES (' + valuesPlaceHolderArr.join(',') + ') ');
+        this.mergeParams(values);
         return this;
     }
 
@@ -64,7 +68,7 @@ class MaskDBQuery {
 
         for (var i = 0; i < columnsKeysArr.length; i++) {
             this.appendQuery(columnsKeysArr[i] + '=?');
-            this.addParams(columns[columnsKeysArr[i]]);
+            this.appendParams(columns[columnsKeysArr[i]]);
         }
 
         return this;
@@ -89,7 +93,7 @@ class MaskDBQuery {
             q += 'WHERE ';
 
         q += condition[0] + ' ' + condition[1] + ' ? ';
-        this.addParams(condition[2]);
+        this.appendParams(condition[2]);
         this.appendQuery(q);
         return this;
     }
@@ -135,7 +139,9 @@ class MaskDBQuery {
                 resolve(result);
             });
 
-            maskDBConnection.end();
+            maskDBConnection.end((err) => {
+                console.log(err);
+            });
         });
     }
 

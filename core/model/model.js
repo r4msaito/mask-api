@@ -6,8 +6,7 @@ class Model {
         this.setValid(false);
         this.setValidMsg('');
         this.setNew(isNew);
-        this.bindModelObjectProperties(this.columns());
-        console.log(Model.getTableName());
+        this._bindModelObjectProperties(this.columns());
     }
 
     getValid() {
@@ -38,12 +37,24 @@ class Model {
     
     }
 
-    schema() {
-
+    getTableName() {
+        return this.constructor.getTableName();
     }
 
-    getIDColumn() {
+    getPKColumnName() {
         return 'id';
+    }
+
+    getPK() {
+        return this[this.getPKColumnName()];
+    }
+
+    setPK(id) {
+        this[this.getPKColumnName()] = id;
+    }
+
+    schema() {
+
     }
 
     columns() {
@@ -89,9 +100,9 @@ class Model {
                 let _this = this;
                 let query = new MaskDBQuery();
                 this.beforeInsert();
-                return query.insert(Model.getTableName(), this.getModelObject()).execute().then((result) => {
-                    _this[this.getIDColumn()] = result[_this.getIDColumn()];
-                    _this._new = false;
+                return query.insert(this.getTableName(), this.getModelObject()).execute().then((result) => {
+                    _this.setPK(result.insertId);
+                    _this.setNew(false);
                     _this.afterInsert();
                     resolve(result);
                 }).catch((err) => {
@@ -99,9 +110,9 @@ class Model {
                 });
             } else {
                 this.beforeUpdate();
-                query.update(Model.getTableName(), this.getModelObject()).execute().then((updateResult) => {
+                return query.update(this.getTableName(), this.getModelObject()).execute().then((updateResult) => {
                     resolve(updateResult);
-                    this.afterUpdate();
+                    _this.afterUpdate();
                 }).catch((updateErr) => {
                     reject(updateErr);
                 });
@@ -114,7 +125,7 @@ class Model {
     }
 
     delete() {
-        return (new MaskDBQuery()).delete().from(Model.getTableName()).where([this.getIDColumn(), '=', this[this.getIDColumn()]]);
+        return (new MaskDBQuery()).delete().from(this.getTableName()).where([this.getPKColumnName(), '=', this[this.getPKColumnName()]]);
     }
 
     static find(condition) {
@@ -122,22 +133,26 @@ class Model {
         let bind = false;
         if (typeof conditions === 'number') {
             bind = true;
-            whr = [this.getIDColumn(), '=', condition];
+            whr = [this.getPKColumnName(), '=', condition];
         } else if (typeof conditions === 'object') {
             whr = condition;
         }
-        return (new MaskDBQuery()).select().from(Model.getTableName()).where(whr).execute().then((result) => {
-            if (bind === true && result.length > 0) {
-                let model = new Model(false);
-                model.bindModelObjectProperties(result);
+
+        return (new MaskDBQuery()).select().from(this.getTableName()).where(whr).execute().then((result) => {
+            if (bind) {
+                let model = new this.constructor();
+                console.log(model);
+                model._bindModelObjectProperties(result);
                 return model;
             } else {
                 return result;
             }
+        }).catch((err) => {
+            console.log(err);
         });
     }
 
-    bindModelObjectProperties(properties) {
+    _bindModelObjectProperties(properties) {
         let propertyKeys = Object.keys(properties);
 
         for (var i = 0; i < propertyKeys; i++)

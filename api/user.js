@@ -57,10 +57,8 @@ router.post('/', [
         user.pass = passHash;
         //validate
         user.save().then((result) => {
-            console.log(result);
             resp.status = constants.API_STATUS_SUCCESS;
             resp.msg = 'Successfully registered';
-            console.log(user);
             Util.die(res, resp, 200);
         }).catch((err) => {
             console.log(err);
@@ -88,25 +86,30 @@ router.post('/authenticate', [
             user_name: {
                 required: true,
                 type: 'string',
+                min: 3,
+                max: 50,
                 custom: {
-                    f: (value) => {
+                    f: (userName) => {
                         var rgx = /[^A-Za-z0-9_]/g;
-                        if (rgx.test(value))
-                            return false;
+                        if (rgx.test(userName))
+                            return false
 
                         return true;
                     },
-                    msg: 'user_name must contain propert characters'
+                    msg: 'user_name can contain only alphabet, numbers or underscore'
                 }
             },
             pass: {
                 required: true,
                 type: 'string',
-                min: 3,
+                min: 6,
                 max: 50
             }
         };
-        let model = {};
+        let model = {
+            user_name: req.body.user_name,
+            pass: req.body.pass
+        };
         let validation = Util.validateSchema(schema, model);
         if (!validation.valid) {
             Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
@@ -114,35 +117,36 @@ router.post('/authenticate', [
             next();
         }
     }
-], async(req, res, next) => {
+], (req, res, next) => {
     let resp = {
         token: ''
     };
     let statusCode = 200;
-    let loggedIn = await User.checkLogin(req.body.user_name, req.body.pass);
-    if (loggedIn !== false && typeof loggedIn === 'object') {
-        try {
-            let token = JWTAuthenticator.genJWT({
-                currentUserID: loggedIn.id,
-                user_name: loggedIn.user_name
-            });
-            resp.status = constants.API_STATUS_SUCCESS;
-            resp.msg = 'Successfully logged in!';
-            resp.token = token;
-        } catch (err) {
-            ErrorLogger.logError({
-                error: err.message,
-                file_info: 'user authenticate api'
-            });
+    let loggedIn = User.tryLoggingIn(req.body.user_name, req.body.pass);
+    console.log(loggedIn);
+    // if (loggedIn !== false && typeof loggedIn === 'object') {
+    //     try {
+    //         let token = JWTAuthenticator.genJWT({
+    //             currentUserID: loggedIn.id,
+    //             user_name: loggedIn.user_name
+    //         });
+    //         resp.status = constants.API_STATUS_SUCCESS;
+    //         resp.msg = 'Successfully logged in!';
+    //         resp.token = token;
+    //     } catch (err) {
+    //         ErrorLogger.logError({
+    //             error: err.message,
+    //             file_info: 'user authenticate api'
+    //         });
 
-            resp.status = constants.API_STATUS_ERROR;
-            resp.msg = 'Unexpected problem in authentication. Please try again later.';
-            statusCode = 500;
-        }
-    } else {
-        resp.status = constants.API_STATUS_ERROR;
-        resp.msg = 'User name or password might be incorrect!'
-    }
+    //         resp.status = constants.API_STATUS_ERROR;
+    //         resp.msg = 'Unexpected problem in authentication. Please try again later.';
+    //         statusCode = 500;
+    //     }
+    // } else {
+    //     resp.status = constants.API_STATUS_ERROR;
+    //     resp.msg = 'User name or password might be incorrect!'
+    // }
 
     Util.die(res, resp, statusCode);
 });
