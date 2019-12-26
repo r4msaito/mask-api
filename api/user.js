@@ -48,30 +48,39 @@ router.post('/', [
             next();
         }
     }
-], async(req, res, next) => {
+], (req, res) => {
     let resp = {};
-    let passHash = await BcryptHelper.hashPassword(req.body.pass);
-    if (passHash.length === 60) {
-        let user = new User();
-        user.user_name = req.body.user_name;
-        user.pass = passHash;
-        //validate
-        user.save().then((result) => {
-            resp.status = constants.API_STATUS_SUCCESS;
-            resp.msg = 'Successfully registered';
-            Util.die(res, resp, 200);
-        }).catch((err) => {
-            console.log(err);
-            resp.status = constants.API_STATUS_ERROR;
-            resp.msg = 'Problem in registration. Please try again later.';
-            Util.die(res, resp, 500);
-        });
+    BcryptHelper.hashPassword(req.body.pass).then((passHash) => {
+        if (passHash.length === 60) {
+            let user = new User();
+            user.user_name = req.body.user_name;
+            user.pass = passHash;
 
-    } else {
-        resp.status = constants.API_STATUS_ERROR;
-        resp.msg = 'Problem in registering. Please try again later';
-        Util.die(res, resp, 200);
-    }
+            //validate
+            if (user.validate()) {
+                user.save().then((result) => {
+                    resp.status = constants.API_STATUS_SUCCESS;
+                    resp.msg = 'Successfully registered';
+                    Util.die(res, resp, 200);
+                }).catch((err) => {
+                    console.log(err);
+                    resp.status = constants.API_STATUS_ERROR;
+                    resp.msg = 'Problem in registration. Please try again later.';
+                    Util.die(res, resp, 500);
+                });
+            } else {
+                resp.status = constants.API_STATUS_ERROR;
+                resp.msg = 'Data validation error.';
+                Util.die(res, resp, 200);
+            }
+        } else {
+            resp.status = constants.API_STATUS_ERROR;
+            resp.msg = 'Problem in registering. Please try again later';
+            Util.die(res, resp, 200);
+        }
+    }).catch((passHashErr) => {
+        console.log(passHashErr);
+    });
 });
 
 
@@ -117,38 +126,26 @@ router.post('/authenticate', [
             next();
         }
     }
-], (req, res, next) => {
+], (req, res) => {
     let resp = {
         token: ''
     };
     let statusCode = 200;
-    let loggedIn = User.tryLoggingIn(req.body.user_name, req.body.pass);
-    console.log(loggedIn);
-    // if (loggedIn !== false && typeof loggedIn === 'object') {
-    //     try {
-    //         let token = JWTAuthenticator.genJWT({
-    //             currentUserID: loggedIn.id,
-    //             user_name: loggedIn.user_name
-    //         });
-    //         resp.status = constants.API_STATUS_SUCCESS;
-    //         resp.msg = 'Successfully logged in!';
-    //         resp.token = token;
-    //     } catch (err) {
-    //         ErrorLogger.logError({
-    //             error: err.message,
-    //             file_info: 'user authenticate api'
-    //         });
+    User.tryLoggingIn(req.body.user_name, req.body.pass).then((canLogin) => {
+        if (canLogin) {
+            let token = JWTAuthenticator.genJWT({
+                currentUserID: canLogin.id,
+                user_name: canLogin['user_name']
+            });
+            resp.status = constants.API_STATUS_SUCCESS;
+            resp.msg = 'Successfully logged in!';
+            resp.token = token;
 
-    //         resp.status = constants.API_STATUS_ERROR;
-    //         resp.msg = 'Unexpected problem in authentication. Please try again later.';
-    //         statusCode = 500;
-    //     }
-    // } else {
-    //     resp.status = constants.API_STATUS_ERROR;
-    //     resp.msg = 'User name or password might be incorrect!'
-    // }
-
-    Util.die(res, resp, statusCode);
+            Util.die(res, resp, statusCode);
+        }
+    }).catch((tryLoggingInErr) => {
+        console.log(tryLoggingInErr);
+    });
 });
 
 
@@ -182,28 +179,23 @@ router.get('/exists', [
             next();
         }
     }
-], async(req, res, next) => {
-    let resp = { found: false };
+], (req, res) => {
+    let resp = {
+        found: false,
+        msg: 'User does not exist'
+    };
+
     User.findUserByUserName(req.body.user_name).then((result) => {
-        resp.status = constants.API_STATUS_SUCCESS
-        if (result.length !== 0) {
+        resp.status = constants.API_STATUS_SUCCESS;
+        if (result.length > 0) {
             resp.found = true;
-            resp.msg = 'User is present'
-        } else {
-            resp.msg = 'User does not exists';
+            resp.msg = 'User is present';
+            return Util.die(res, resp, 200);
         }
 
-        Util.die(res, resp, 200);
+        return Util.die(res, resp, 200);
     }).catch((err) => {
-        let errStr = JSON.stringify(err);
-        if (errStr)
-            ErrorLog.logError({
-                error: errStr,
-                file_info: 'user exists api'
-            });
-
-        resp.status = constants.API_STATUS_ERROR;
-        resp.msg = 'sdf';
+        console.log(err);
         Util.die(res, resp, 500);
     });
 });
