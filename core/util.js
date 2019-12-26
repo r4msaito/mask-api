@@ -128,7 +128,7 @@ class MaskUtil {
                 if (!maxValid)
                     return MaskUtil._returnValidationResult(false, maxValidMsg);
             }
-            
+
             if (schema[schemaProperties[i]].hasOwnProperty('custom') && !schema[schemaProperties[i]].custom.f(model[schemaProperties[i]])) {
                 let customValidMsg = (schema[schemaProperties[i]]['custom'].hasOwnProperty('msg')) ? schema[schemaProperties[i]]['custom']['msg'] : 'custom validation error on ' + schemaProperties[i];
                 return MaskUtil._returnValidationResult(false, customValidMsg);
@@ -144,6 +144,14 @@ class MaskUtil {
             valid: valid,
             msg: msg
         };
+    }
+
+    static containsNumber(v) {
+        return /\d/.test(v.toString());
+    }
+
+    static containsNonNumberCharacter(v) {
+        return /\D/.test(v.toString());
     }
 }
 

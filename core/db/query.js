@@ -1,5 +1,4 @@
 const { maskDBConnection } = absRequire('core/db/connection');
-const { config } = absRequire('config/master');
 
 class MaskDBQuery {
     constructor() {
@@ -89,7 +88,7 @@ class MaskDBQuery {
             return this;
 
         let q = '';
-        if (condition[3].length === 0)
+        if (condition[3] === undefined || !condition[3])
             q += 'WHERE ';
 
         q += condition[0] + ' ' + condition[1] + ' ? ';
@@ -137,10 +136,6 @@ class MaskDBQuery {
                     reject(err);
 
                 resolve(result);
-            });
-
-            maskDBConnection.end((err) => {
-                console.log(err);
             });
         });
     }
