@@ -68,61 +68,56 @@ router.post('/', [
  * Update post
  */
 
-// router.patch('/:id', [
-//     JWTAuthenticator.authenticate,
-//     (req, res, next) => {
-//         let schema = {
-//             id: {
-//                 required: true,
-//                 type: 'int'
-//             },
-//             content: {
-//                 required: true,
-//                 type: 'string',
-//                 min: 8,
-//                 max: 10000
-//             },
-//             custom: {
-//                 f: (postCatsValue) => {
-//                     if (postCatsValue === undefined)
-//                         return true;
+router.patch('/:id', [
+    JWTAuthenticator.authenticate,
+    (req, res, next) => {
+        let schema = {
+            content: {
+                required: true,
+                type: 'string',
+                min: 8,
+                max: 10000
+            },
+            post_cats: {
+                type: 'string',
+                custom: {
+                    f: (catsValue) => {
+                        if (!Tax.isCatIDInputValid(catsValue))
+                            return false;
 
-//                     if (!PostCat.validatePostCatInput(postCatVal))
-//                         return false
+                        return true;
+                    },
+                    msg: 'post_cats should be comma separated values and it can contain only numbers'
+                }
+            }
+        };
+        let model = {
+            content: req.body.content,
+            post_cats: req.body.post_cats
+        };
 
-//                     return true;
-//                 },
-//                 msg: 'post_cats should be comma separated values and it can contain only numbers'
-//             }
-//         };
-//         let model = {
-//             id: req.params.id,
-//             content: req.body.content,
-//             post_cats: req.body.post_cats
-//         };
+        let validation = Util.validateSchema(schema, model);
+        if (!validation.valid) {
+            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+        } else {
+            next();
+        }
+    }
+], (req, res) => {
+    let resp = {};
+    try {
+        transaction(Post.knex(), (trx) => {
+            Post.query(trx).findById(req.params.id).patch({
+                content: req.body.content
+            });
 
-//         let validation = Util.validateSchema(schema, model);
-//         if (!validation.valid) {
-//             Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
-//         } else {
-//             next();
-//         }
-//     }
-// ], (req, res) => {
-//     let resp = {};
-//     try {
-//         transaction(Post.knex(), (trx) => {
-//             Post.query(trx).findById(req.params.id).patch({
-//                 content: req.body.content
-//             });
-
-//             if (req.body.post_cats.length)
-//                 PostCatRel.refreshPostCatRelations(req.params.id, req.body.post_cats);
-//         });
-//     } catch (trxErr) {
-//         console.log(trxErr);
-//     }
-// });
+            if (req.body.post_cats.length)
+                PostCatRel.refreshPostCatRelations(req.params.id, req.body.post_cats);
+        });
+    } catch (trxErr) {
+        console.log(trxErr);
+    }
+});
 
 
 /*
@@ -130,7 +125,14 @@ router.post('/', [
  */
 
 router.get('/cats', [], (req, res) => {
-    
+    Tax.getCats()
+        .then((cats) => {
+            Util.die(res, { status: constants.API_STATUS_SUCCESS, msg: 'Categories retrieved', cats: cats }, 200);
+        })
+        .catch((err) => {
+            console.log(err);
+            Util.die(res, { status: constants.API_STATUS_ERROR, msg: 'Problem in retrieving categories. Please try again later' }, 500);
+        });
 });
 
 

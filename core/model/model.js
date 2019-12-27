@@ -123,7 +123,10 @@ class Model {
     }
 
     delete() {
-        return (new MaskDBQuery()).delete().from(this.constructor.getTableName()).where([this.constructor.getPKColumnName(), '=', this[this.constructor.getPKColumnName()]]);
+        return (new MaskDBQuery())
+            .delete()
+            .from(this.constructor.getTableName())
+            .where([this.constructor.getPKColumnName(), '=', this[this.constructor.getPKColumnName()]]);
     }
 
     static find(condition) {
