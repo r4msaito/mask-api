@@ -61,7 +61,7 @@ class User extends Model {
     }
 
     static tryLoggingIn(userName, pass) {
-        return this.findUserByUserName(User.sanitizeUserName(userName), pass).then((result) => {
+        return User.findUserByUserName(User.sanitizeUserName(userName), pass).then((result) => {
             if (result.length > 0) {
                 return BcryptHelper.checkHash(pass, result[0].pass).then((hashCheck) => {
                     return (hashCheck) ? result[0] : false;

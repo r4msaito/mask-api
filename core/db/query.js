@@ -83,6 +83,11 @@ class MaskDBQuery {
         return this;
     }
 
+    innerJoin(table, on) {
+        this.appendQuery('INNER JOIN ' + table + ' ON ' + on + ' ');
+        return this;
+    }
+
     where(condition) {
         if (typeof condition !== 'object' || Object.keys(condition).length === 0)
             return this;
@@ -91,7 +96,7 @@ class MaskDBQuery {
         if (condition[3] === undefined || !condition[3])
             q += 'WHERE ';
 
-        q += condition[0] + ' ' + condition[1] + ' ? ';
+        q += condition[0] + condition[1] + '? ';
         this.appendParams(condition[2]);
         this.appendQuery(q);
         return this;
@@ -103,7 +108,7 @@ class MaskDBQuery {
     }
 
     orderBy(column, order) {
-        order = order.toUppserCase();
+        order = (order === undefined) ? 'ASC' : order.toUppserCase();
         let allowedOrders = {
             ASC: 'ASC',
             DESC: 'DESC'
@@ -111,7 +116,9 @@ class MaskDBQuery {
 
         this.appendQuery('ORDER BY ' + column);
         if (order)
-            this.appendQuery(' ' + allowedOrders[order]);
+            this.appendQuery(' ' + allowedOrders[order] + ' ');
+
+        return this;
     }
 
     limit() {

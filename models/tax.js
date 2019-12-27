@@ -1,6 +1,7 @@
 const { Model } = absRequire('core/model/model');
 const { config } = absRequire('config/master');
 const { Util } = absRequire('core/util');
+const { MaskDBQuery } = absRequire('core/db/query');
 
 class Tax extends Model {
 
@@ -41,10 +42,39 @@ class Tax extends Model {
         return true;
     }
 
+    static getTerms(tax) {
+        let q = new MaskDBQuery();
+        let { TaxTerms } = absRequire('models/tax-terms');
+        let taxTbl = Tax.getTableName();
+        let taxTermsTbl = TaxTerms.getTableName();
+        let taxTblPK = Tax.getPKColumnName();
+        let taxTermsTblPK = TaxTerms.getPKColumnName();
+
+        return q.select([taxTermsTbl + '.' + taxTblPK, taxTermsTbl + '.term', taxTermsTbl + '.slug'])
+            .from(taxTbl)
+            .innerJoin(taxTermsTbl, taxTbl + '.' + taxTblPK + '=' + taxTermsTbl + '.tax_id')
+            .where([taxTbl + '.slug', '=', tax])
+            .orderBy(taxTermsTbl + '.' + taxTermsTblPK)
+            .execute()
+            .then((cats) => {
+                return cats;
+            }).catch((err) => {
+                console.log(err);
+                return false;
+            });
+    }
+
     static getCats() {
-        
+        return Tax.getTerms(Tax.CATEGORY_TAX);
+    }
+
+    static getHashTags() {
+        return Tax.getTerms(Tax.HASHTAG_TAX);
     }
 
 }
+
+Tax.CATEGORY_TAX = 'category';
+Tax.HASHTAG_TAX = 'hashtag';
 
 module.exports.Tax = Tax;
