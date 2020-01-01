@@ -129,6 +129,11 @@ class MaskUtil {
                     return MaskUtil._returnValidationResult(false, maxValidMsg);
             }
 
+            if (schema[schemaProperties[i]].hasOwnProperty('in')) {
+                if (!schema[schemaProperties[i]]['in'].includes(model[schemaProperties[i]]))
+                    return MaskUtil._returnValidationResult(false, schemaProperties[i] + ' can contain any of the following values (' + schema[schemaProperties[i]]['in'].split(',') + ')');
+            }
+
             if (schema[schemaProperties[i]].hasOwnProperty('custom') && !schema[schemaProperties[i]].custom.f(model[schemaProperties[i]])) {
                 let customValidMsg = (schema[schemaProperties[i]]['custom'].hasOwnProperty('msg')) ? schema[schemaProperties[i]]['custom']['msg'] : 'custom validation error on ' + schemaProperties[i];
                 return MaskUtil._returnValidationResult(false, customValidMsg);

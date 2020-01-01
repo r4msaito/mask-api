@@ -23,7 +23,7 @@ class TaxTerms extends Model {
         };
     }
 
-    columns() {
+    static columns() {
         return [
             'term',
             'slug',

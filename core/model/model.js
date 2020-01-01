@@ -33,6 +33,18 @@ class Model {
         return this._new;
     }
 
+    static getColumnPrefix() {
+        return 'msk_';
+    }
+
+    static hasCreatedAtTimeStamp() {
+        return false;
+    }
+
+    static hasUpdatedAtTimeStamp() {
+        return false;
+    }
+
     static getTableName() {
 
     }
@@ -49,11 +61,11 @@ class Model {
         this[this.constructor.getPKColumnName()] = id;
     }
 
-    schema() {
+    static schema() {
 
     }
 
-    columns() {
+    static columns() {
 
     }
 
@@ -75,9 +87,15 @@ class Model {
 
     getModelObject() {
         let obj = {};
-        let columns = this.columns();
+        let columns = this.constructor.columns();
         let pk = this.constructor.getPKColumnName();
         obj[pk] = (this.hasOwnProperty(pk)) ? this[pk] : undefined;
+        if (this.constructor.hasCreatedAtTimeStamp())
+            obj['created_at'] = (this.hasOwnProperty('created_at')) ? this['created_at'] : undefined;
+
+        if (this.constructor.hasUpdatedAtTimeStamp())
+            obj['updated_at'] = (this.hasOwnProperty('created_at')) ? this['updated_at'] : undefined;
+
         for (var i = 0; i < columns.length; i++)
             obj[columns[i]] = this[columns[i]];
 
@@ -98,6 +116,14 @@ class Model {
                 let _this = this;
                 let query = new MaskDBQuery();
                 this.beforeInsert();
+                let currTime = Util.getCurrMysqlDateTime();
+
+                if (this.constructor.hasCreatedAtTimeStamp())
+                    this['created_at'] = currTime;
+
+                if (this.constructor.hasUpdatedAtTimeStamp())
+                    this['updated_at'] = currTime;
+
                 return query.insert(this.constructor.getTableName(), this.getModelObject()).execute().then((result) => {
                     _this.setPK(result.insertId);
                     _this.setNew(false);
@@ -107,19 +133,24 @@ class Model {
                     reject(err);
                 });
             } else {
-                this.beforeUpdate();
-                return query.update(this.constructor.getTableName(), this.getModelObject()).execute().then((updateResult) => {
-                    resolve(updateResult);
-                    _this.afterUpdate();
-                }).catch((updateErr) => {
-                    reject(updateErr);
-                });
+                return this.update();
             }
         });
     }
 
-    patch() {
+    update() {
+        let _this = this;
+        this.beforeUpdate();
 
+        if (this.constructor.hasUpdatedAtTimeStamp())
+            this['updated_at'] = Util.getCurrMysqlDateTime();
+
+        return query.update(this.constructor.getTableName(), this.getModelObject()).execute().then((updateResult) => {
+            resolve(updateResult);
+            _this.afterUpdate();
+        }).catch((updateErr) => {
+            reject(updateErr);
+        });
     }
 
     delete() {
@@ -130,26 +161,21 @@ class Model {
     }
 
     static find(condition) {
-        let whr = '';
-        let bind = false;
         if (typeof condition === 'number') {
-            bind = true;
-            whr = [this.constructor.getPKColumnName(), '=', condition];
-        } else if (typeof condition === 'object') {
-            whr = condition;
+            return (new MaskDBQuery()).select().from(this.getTableName()).where(whr).execute().then((result) => {
+                if (bind) {
+                    let model = new this.constructor();
+                    model._bindModelObjectProperties(result);
+                    return model;
+                } else {
+                    return result;
+                }
+            }).catch((err) => {
+                console.log(err);
+            });
+        } else {
+            return (new MaskDBQuery());
         }
-
-        return (new MaskDBQuery()).select().from(this.getTableName()).where(whr).execute().then((result) => {
-            if (bind) {
-                let model = new this.constructor();
-                model._bindModelObjectProperties(result);
-                return model;
-            } else {
-                return result;
-            }
-        }).catch((err) => {
-            console.log(err);
-        });
     }
 
     _bindModelObjectProperties(properties) {

@@ -5,7 +5,7 @@ const { ErrorLogger } = absRequire('models/error-logger');
 const { BcryptHelper } = absRequire('core/bcrypt-helper');
 
 class User extends Model {
-    
+
     static getTableName() {
         return config['db']['table_prefix'] + config['db']['table']['user'];
     }
@@ -37,7 +37,7 @@ class User extends Model {
         }
     }
 
-    columns() {
+    static columns() {
         return [
             'user_name',
             'pass',
@@ -46,18 +46,20 @@ class User extends Model {
         ];
     }
 
-    beforeInsert() {
-        let currMySQLDateTime = Util.getCurrMysqlDateTime();
-        this.created_at = currMySQLDateTime;
-        this.updated_at = currMySQLDateTime;
+    static hasCreatedAtTimeStamp() {
+        return true;
     }
 
-    beforeUpdate() {
-        this.updated_at = Util.getCurrMysqlDateTime();
+    static hasUpdatedAtTimeStamp() {
+        return true;
     }
 
     static findUserByUserName(userName) {
-        return this.find(['user_name', '=', userName]);
+        return User.find()
+            .select('*')
+            .from(User.getTableName())
+            .where(['user_name', '=', userName])
+            .execute();
     }
 
     static tryLoggingIn(userName, pass) {
