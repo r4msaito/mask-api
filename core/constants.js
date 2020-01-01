@@ -3,5 +3,6 @@ module.exports.constants = {
     ENV_STAGING: 'staging',
     ENV_PROD: 'production',
     API_STATUS_SUCCESS: 'success',
-    API_STATUS_ERROR: 'error'
+    API_STATUS_ERROR: 'error',
+    MYSQL_UNSIGNED_INT_LIMIT: 4294967295
 };

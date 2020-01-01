@@ -8,7 +8,7 @@ class Story extends Model {
         return config['db']['table_prefix'] + config['db']['table']['story'];
     }
 
-    schema() {
+    static schema() {
         return {
             content: {
                 type: 'string',
@@ -25,7 +25,7 @@ class Story extends Model {
         };
     }
 
-    columns() {
+    static columns() {
         return [
             'content',
             'author',
@@ -35,14 +35,16 @@ class Story extends Model {
         ];
     }
 
-    beforeInsert() {
-        let currMySQLDateTime = Util.getCurrMysqlDateTime();
-        this.created_at = currMySQLDateTime;
-        this.updated_at = currMySQLDateTime;
+    static hasCreatedAtTimeStamp() {
+        return true;
     }
 
-    beforeUpdate() {
-        this.updated_at = Util.getCurrMysqlDateTime();
+    static hasUpdatedAtTimeStamp() {
+        return true;
+    }
+
+    updateStory() {
+
     }
 }
 

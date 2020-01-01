@@ -25,7 +25,7 @@ class Tax extends Model {
         };
     }
 
-    columns() {
+    static columns() {
         return [
             'name',
             'slug'
@@ -65,16 +65,16 @@ class Tax extends Model {
     }
 
     static getCats() {
-        return Tax.getTerms(Tax.CATEGORY_TAX);
+        return Tax.getTerms(Tax.TAX_CATEGORY);
     }
 
     static getHashTags() {
-        return Tax.getTerms(Tax.HASHTAG_TAX);
+        return Tax.getTerms(Tax.TAX_HASHTAG);
     }
 
 }
 
-Tax.CATEGORY_TAX = 'category';
-Tax.HASHTAG_TAX = 'hashtag';
+Tax.TAX_CATEGORY = 'category';
+Tax.TAX_HASHTAG = 'hashtag';
 
 module.exports.Tax = Tax;

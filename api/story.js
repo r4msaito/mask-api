@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Util } = absRequire('core/util');
 const { Story } = absRequire('models/story');
+//const { StoryReact } = absRequire('models/story-react');
 const { Tax } = absRequire('models/tax');
 const { JWTAuthenticator } = absRequire('core/jwt-authenticator');
 const { constants } = absRequire('core/constants');
@@ -20,7 +21,7 @@ router.post('/', [
                 min: 8,
                 max: 10000
             },
-            post_cats: {
+            story_cats: {
                 type: 'string',
                 custom: {
                     f: (catsValue) => {
@@ -29,7 +30,7 @@ router.post('/', [
 
                         return true;
                     },
-                    msg: 'post_cats should be comma separated values and it can contain only numbers'
+                    msg: 'story_cats should be comma separated values and it can contain only numbers'
                 }
             }
         };
@@ -103,21 +104,7 @@ router.patch('/:id', [
             next();
         }
     }
-], (req, res) => {
-    let resp = {};
-    try {
-        transaction(Post.knex(), (trx) => {
-            Post.query(trx).findById(req.params.id).patch({
-                content: req.body.content
-            });
-
-            if (req.body.post_cats.length)
-                PostCatRel.refreshPostCatRelations(req.params.id, req.body.post_cats);
-        });
-    } catch (trxErr) {
-        console.log(trxErr);
-    }
-});
+], (req, res) => {});
 
 
 /*
@@ -137,10 +124,10 @@ router.get('/cats', [], (req, res) => {
 
 
 /*
- * React to post
+ * React to story
  */
 
-// router.post('/react', [
+// router.post('/story', [
 //     JWTAuthenticator.authenticate,
 //     PostReact.validateReactType,
 // ], (req, res) => {
