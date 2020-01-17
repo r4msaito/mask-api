@@ -4,11 +4,11 @@ const { Util } = absRequire('core/util');
 
 class Story extends Model {
 
-    static getTableName() {
+    static $getTableName() {
         return config['db']['table_prefix'] + config['db']['table']['story'];
     }
 
-    static schema() {
+    static $schema() {
         return {
             content: {
                 type: 'string',
@@ -25,7 +25,7 @@ class Story extends Model {
         };
     }
 
-    static columns() {
+    static $columns() {
         return [
             'content',
             'author',
@@ -35,11 +35,11 @@ class Story extends Model {
         ];
     }
 
-    static hasCreatedAtTimeStamp() {
+    static $enableCreatedAtTimeStamp() {
         return true;
     }
 
-    static hasUpdatedAtTimeStamp() {
+    static $enableUpdatedAtTimeStamp() {
         return true;
     }
 

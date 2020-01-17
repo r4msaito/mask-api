@@ -3,11 +3,11 @@ const { config } = absRequire('config/master');
 
 class TaxTerms extends Model {
 
-    static getTableName() {
+    static $getTableName() {
         return config['db']['table_prefix'] + config['db']['table']['tax_terms'];
     }
 
-    static schema() {
+    static $schema() {
         return {
             name: {
                 required: true,
@@ -23,7 +23,7 @@ class TaxTerms extends Model {
         };
     }
 
-    static columns() {
+    static $columns() {
         return [
             'term',
             'slug',

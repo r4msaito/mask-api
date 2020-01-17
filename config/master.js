@@ -2,7 +2,7 @@ const { Util } = require('../core/util');
 const { constants } = require('../core/constants');
 
 module.exports.config = (function () {
-    let currEnv = Util.getCurrentEnvironment();
+    let currEnv = Util.$getCurrentEnvironment();
     let uploadsPath = './uploads/';
     let config = {
         db: {
@@ -15,7 +15,7 @@ module.exports.config = (function () {
                 tax_terms: 'tax_terms',
                 story_terms: 'story_terms',
                 story_comment: 'story_comment',
-                story_react: 'story_react',
+                entity_reaction: 'entity_reaction',
                 story_share_log: 'story_share_log',
                 error_log: 'error_log',
             }

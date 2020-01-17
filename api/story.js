@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Util } = absRequire('core/util');
 const { Story } = absRequire('models/story');
-//const { StoryReact } = absRequire('models/story-react');
+const { EntityReaction } = absRequire('models/entity-reaction');
 const { Tax } = absRequire('models/tax');
 const { JWTAuthenticator } = absRequire('core/jwt-authenticator');
 const { constants } = absRequire('core/constants');
@@ -12,7 +12,7 @@ const { constants } = absRequire('core/constants');
  */
 
 router.post('/', [
-    JWTAuthenticator.authenticate,
+    JWTAuthenticator.$authenticate,
     (req, res, next) => {
         let schema = {
             content: {
@@ -36,12 +36,12 @@ router.post('/', [
         };
         let model = {
             content: req.body.content,
-            post_cats: req.body.post_cats
+            story_cats: req.body.story_cats
         };
 
-        let validation = Util.validateSchema(schema, model);
+        let validation = Util.$validateSchema(schema, model);
         if (!validation.valid) {
-            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
         } else {
             next();
         }
@@ -52,15 +52,15 @@ router.post('/', [
     story.author = req.jwtData.currentUserID;
     story.status = Story.STATUS_PUBLISH;
     story.save().then((result) => {
-        if (result.insertID) {
-            Util.die(res, { status: constants.API_STATUS_SUCCESS, msg: 'Your story is published.' }, 200);
+        if (result.insertId) {
+            Util.$die(res, { status: constants.API_STATUS_SUCCESS, msg: 'Your story is published.' }, 200);
         } else {
             console.log(result);
-            Util.die(res, { status: constants.API_STATUS_ERROR, msg: 'Problem in posting your story. Please try again later.' }, 500);
+            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: 'Problem in posting your story. Please try again later.' }, 500);
         }
     }).catch((err) => {
         console.log(err);
-        Util.die(res, { status: constants.API_STATUS_ERROR, msg: 'Problem in posting your story. Please try again later.' }, 500);
+        Util.$die(res, { status: constants.API_STATUS_ERROR, msg: 'Problem in posting your story. Please try again later.' }, 500);
     });
 });
 
@@ -70,7 +70,7 @@ router.post('/', [
  */
 
 router.patch('/:id', [
-    JWTAuthenticator.authenticate,
+    JWTAuthenticator.$authenticate,
     (req, res, next) => {
         let schema = {
             content: {
@@ -88,7 +88,7 @@ router.patch('/:id', [
 
                         return true;
                     },
-                    msg: 'post_cats should be comma separated values and it can contain only numbers'
+                    msg: 'story_cats should be comma separated values and it can contain only numbers'
                 }
             }
         };
@@ -97,9 +97,9 @@ router.patch('/:id', [
             post_cats: req.body.post_cats
         };
 
-        let validation = Util.validateSchema(schema, model);
+        let validation = Util.$validateSchema(schema, model);
         if (!validation.valid) {
-            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
         } else {
             next();
         }
@@ -108,17 +108,17 @@ router.patch('/:id', [
 
 
 /*
- * Get post cats
+ * Get story cats
  */
 
 router.get('/cats', [], (req, res) => {
     Tax.getCats()
         .then((cats) => {
-            Util.die(res, { status: constants.API_STATUS_SUCCESS, msg: 'Categories retrieved', cats: cats }, 200);
+            Util.$die(res, { status: constants.API_STATUS_SUCCESS, msg: 'Categories retrieved', cats: cats }, 200);
         })
         .catch((err) => {
             console.log(err);
-            Util.die(res, { status: constants.API_STATUS_ERROR, msg: 'Problem in retrieving categories. Please try again later' }, 500);
+            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: 'Problem in retrieving categories. Please try again later' }, 500);
         });
 });
 
@@ -127,24 +127,44 @@ router.get('/cats', [], (req, res) => {
  * React to story
  */
 
-// router.post('/story', [
-//     JWTAuthenticator.authenticate,
-//     PostReact.validateReactType,
-// ], (req, res) => {
-//     let resp = {};
-//     PostReact.react(req.body.id, req.jwtData.currentUserID, req.body.type).then((reacted) => {
-//         resp.status = constants.API_STATUS_SUCCESS;
-//         resp.msg = 'Reacted successfully';
-//         Util.die(res, resp, 200);
-//     }).catch((err) => {
-//         let errStr = JSON.stringify(err);
-//         if (errStr)
-//             ErrorLogger.logError({
-//                 error: errStr,
-//                 file_info: 'react api'
-//             });
-//     });
-// });
+router.post('/react', [
+    JWTAuthenticator.$authenticate,
+    (req, res, next) => {
+        req.body.story_id = parseInt(req.body.story_id);
+        let schema = {
+            story_id: {
+                required: true,
+                type: 'int',
+                max: constants.MYSQL_UNSIGNED_INT_LIMIT
+            },
+            react_type: {
+                required: true,
+                in: EntityReaction.$getAllowedReactTypes()
+            }
+        };
+
+        let model = {
+            story_id: req.body.story_id,
+            react_type: req.body.react_type
+        };
+
+        let validation = Util.$validateSchema(schema, model);
+        if (!validation.valid) {
+            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+        } else {
+            next();
+        }
+    }
+], (req, res) => {
+    EntityReaction.$react(req.body.story_id, req.jwtData.currentUserID, EntityReaction.REACT_ENTITY_STORY, req.body.react_type)
+    .then((result) => {
+        console.log('inside result');
+        console.log(result);
+    }).catch((err) => {
+        console.log('inside error man');
+        console.log(err);
+    });
+});
 
 
 module.exports = router;

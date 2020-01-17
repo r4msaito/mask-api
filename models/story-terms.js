@@ -4,11 +4,11 @@ const { Util } = absRequire('core/util');
 
 class Story extends Model {
 
-    static getTableName() {
+    static $getTableName() {
         return config['db']['table_prefix'] + config['db']['table']['story_terms'];
     }
 
-    static schema() {
+    static $schema() {
         return {
             story_id: {
                 type: 'int',
@@ -23,7 +23,7 @@ class Story extends Model {
         };
     }
 
-    static columns() {
+    static $columns() {
         return [
             'story_id',
             'term_id'

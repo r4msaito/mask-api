@@ -1,11 +1,11 @@
 const moment = require('moment');
 
 class MaskUtil {
-    static getCurrentEnvironment() {
+    static $getCurrentEnvironment() {
         if (process.argv.length) {
             let i;
             for (i = 0; i < process.argv.length; i++) {
-                if (process.argv[i] === '--env' && process.argv[i + 1] !== undefined && this.getAllowedEnvironments().includes(process.argv[i + 1]))
+                if (process.argv[i] === '--env' && process.argv[i + 1] !== undefined && MaskUtil.$getAllowedEnvironments().includes(process.argv[i + 1]))
                     return process.argv[i + 1];
 
                 return 'development'
@@ -15,7 +15,7 @@ class MaskUtil {
         return 'development'
     }
 
-    static getAllowedEnvironments() {
+    static $getAllowedEnvironments() {
         return [
             'development',
             'staging',
@@ -23,25 +23,25 @@ class MaskUtil {
         ];
     }
 
-    static die(resp, payload, statusCode) {
+    static $die(resp, payload, statusCode) {
         var statusCode = (typeof statusCode === 'undefined') ? 200 : statusCode;
         return resp.status(statusCode).json(payload);
     }
 
-    static getCurrMysqlDateTime() {
+    static $getCurrMysqlDateTime() {
         return moment().format("YYYY-MM-DD HH:mm:ss");
     }
 
-    static validateSchema(schema, model) {
+    static $validateSchema(schema, model) {
         let schemaProperties = Object.keys(schema);
         let modelProperties = Object.keys(model);
 
         if (schemaProperties.length === 0 || modelProperties.length === 0)
-            return MaskUtil._returnValidationResult(true, '');
+            return MaskUtil.$_returnValidationResult(true, '');
 
         for (var i = 0; i < schemaProperties.length; i++) {
             if (!modelProperties.includes(schemaProperties[i]))
-                return MaskUtil._returnValidationResult(false, 'Model property ' + schemaProperties[i] + ' does not exist');
+                return MaskUtil.$_returnValidationResult(false, 'Model property ' + schemaProperties[i] + ' does not exist');
 
             if (schema[schemaProperties[i]].hasOwnProperty('required')) {
                 let requiredValid = true;
@@ -61,7 +61,7 @@ class MaskUtil {
                 }
 
                 if (!requiredValid)
-                    return MaskUtil._returnValidationResult(false, requiredValidMsg);
+                    return MaskUtil.$_returnValidationResult(false, requiredValidMsg);
             }
 
             if (schema[schemaProperties[i]].hasOwnProperty('type')) {
@@ -83,7 +83,7 @@ class MaskUtil {
                 }
 
                 if (!typeValid) {
-                    return MaskUtil._returnValidationResult(false, typeValidMsg);
+                    return MaskUtil.$_returnValidationResult(false, typeValidMsg);
                 }
             }
 
@@ -105,7 +105,7 @@ class MaskUtil {
                 }
 
                 if (!minValid)
-                    return MaskUtil._returnValidationResult(false, minValidMsg);
+                    return MaskUtil.$_returnValidationResult(false, minValidMsg);
             }
 
             if (schema[schemaProperties[i]].hasOwnProperty('max')) {
@@ -126,36 +126,36 @@ class MaskUtil {
                 }
 
                 if (!maxValid)
-                    return MaskUtil._returnValidationResult(false, maxValidMsg);
+                    return MaskUtil.$_returnValidationResult(false, maxValidMsg);
             }
 
             if (schema[schemaProperties[i]].hasOwnProperty('in')) {
                 if (!schema[schemaProperties[i]]['in'].includes(model[schemaProperties[i]]))
-                    return MaskUtil._returnValidationResult(false, schemaProperties[i] + ' can contain any of the following values (' + schema[schemaProperties[i]]['in'].split(',') + ')');
+                    return MaskUtil.$_returnValidationResult(false, schemaProperties[i] + ' can contain any of the following values (' + schema[schemaProperties[i]]['in'].join(',') + ')');
             }
 
             if (schema[schemaProperties[i]].hasOwnProperty('custom') && !schema[schemaProperties[i]].custom.f(model[schemaProperties[i]])) {
                 let customValidMsg = (schema[schemaProperties[i]]['custom'].hasOwnProperty('msg')) ? schema[schemaProperties[i]]['custom']['msg'] : 'custom validation error on ' + schemaProperties[i];
-                return MaskUtil._returnValidationResult(false, customValidMsg);
+                return MaskUtil.$_returnValidationResult(false, customValidMsg);
             }
 
         }
 
-        return MaskUtil._returnValidationResult(true, '');
+        return MaskUtil.$_returnValidationResult(true, '');
     }
 
-    static _returnValidationResult(valid, msg) {
+    static $_returnValidationResult(valid, msg) {
         return {
             valid: valid,
             msg: msg
         };
     }
 
-    static containsNumber(v) {
+    static $containsNumber(v) {
         return /\d/.test(v.toString());
     }
 
-    static containsNonNumberCharacter(v) {
+    static $containsNonNumberCharacter(v) {
         return /\D/.test(v.toString());
     }
 }

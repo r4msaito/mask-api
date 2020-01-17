@@ -6,11 +6,11 @@ const { BcryptHelper } = absRequire('core/bcrypt-helper');
 
 class User extends Model {
 
-    static getTableName() {
+    static $getTableName() {
         return config['db']['table_prefix'] + config['db']['table']['user'];
     }
 
-    static schema() {
+    static $schema() {
         return {
             user_name: {
                 required: true,
@@ -37,7 +37,7 @@ class User extends Model {
         }
     }
 
-    static columns() {
+    static $columns() {
         return [
             'user_name',
             'pass',
@@ -46,26 +46,26 @@ class User extends Model {
         ];
     }
 
-    static hasCreatedAtTimeStamp() {
+    static $enableCreatedAtTimeStamp() {
         return true;
     }
 
-    static hasUpdatedAtTimeStamp() {
+    static $enableUpdatedAtTimeStamp() {
         return true;
     }
 
-    static findUserByUserName(userName) {
-        return User.find()
+    static $findUserByUserName(userName) {
+        return User.$find()
             .select('*')
-            .from(User.getTableName())
+            .from(User.$getTableName())
             .where(['user_name', '=', userName])
             .execute();
     }
 
-    static tryLoggingIn(userName, pass) {
-        return User.findUserByUserName(User.sanitizeUserName(userName), pass).then((result) => {
+    static $tryLoggingIn(userName, pass) {
+        return User.$findUserByUserName(User.sanitizeUserName(userName), pass).then((result) => {
             if (result.length > 0) {
-                return BcryptHelper.checkHash(pass, result[0].pass).then((hashCheck) => {
+                return BcryptHelper.$checkHash(pass, result[0].pass).then((hashCheck) => {
                     return (hashCheck) ? result[0] : false;
                 }).catch((hashCheckErr) => {
                     console.log(hashCheckErr);

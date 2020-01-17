@@ -33,39 +33,43 @@ class Model {
         return this._new;
     }
 
-    static getColumnPrefix() {
+    static $getColumnPrefix() {
         return 'msk_';
     }
 
-    static hasCreatedAtTimeStamp() {
+    static $enableCreatedAtTimeStamp() {
         return false;
     }
 
-    static hasUpdatedAtTimeStamp() {
+    static $enableUpdatedAtTimeStamp() {
         return false;
     }
 
-    static getTableName() {
+    static enableSoftDelete() {
+        return false;
+    }
+
+    static $getTableName() {
 
     }
 
-    static getPKColumnName() {
+    static $getPKColumnName() {
         return 'id';
     }
 
     getPK() {
-        return this[this.constructor.getPKColumnName()];
+        return this[this.constructor.$getPKColumnName()];
     }
 
     setPK(id) {
-        this[this.constructor.getPKColumnName()] = id;
+        this[this.constructor.$getPKColumnName()] = id;
     }
 
-    static schema() {
+    static $schema() {
 
     }
 
-    static columns() {
+    static $columns() {
 
     }
 
@@ -87,13 +91,13 @@ class Model {
 
     getModelObject() {
         let obj = {};
-        let columns = this.constructor.columns();
-        let pk = this.constructor.getPKColumnName();
+        let columns = this.constructor.$columns();
+        let pk = this.constructor.$getPKColumnName();
         obj[pk] = (this.hasOwnProperty(pk)) ? this[pk] : undefined;
-        if (this.constructor.hasCreatedAtTimeStamp())
+        if (this.constructor.$enableCreatedAtTimeStamp())
             obj['created_at'] = (this.hasOwnProperty('created_at')) ? this['created_at'] : undefined;
 
-        if (this.constructor.hasUpdatedAtTimeStamp())
+        if (this.constructor.$enableUpdatedAtTimeStamp())
             obj['updated_at'] = (this.hasOwnProperty('created_at')) ? this['updated_at'] : undefined;
 
         for (var i = 0; i < columns.length; i++)
@@ -103,7 +107,7 @@ class Model {
     }
 
     validate() {
-        let validationResult = Util.validateSchema(this.constructor.schema(), this);
+        let validationResult = Util.$validateSchema(this.constructor.$schema(), this);
         this._valid = validationResult.valid;
         this._validMsg = validationResult.msg;
         return this._valid;
@@ -116,15 +120,15 @@ class Model {
                 let _this = this;
                 let query = new MaskDBQuery();
                 this.beforeInsert();
-                let currTime = Util.getCurrMysqlDateTime();
+                let currTime = Util.$getCurrMysqlDateTime();
 
-                if (this.constructor.hasCreatedAtTimeStamp())
+                if (this.constructor.$enableCreatedAtTimeStamp())
                     this['created_at'] = currTime;
 
-                if (this.constructor.hasUpdatedAtTimeStamp())
+                if (this.constructor.$enableUpdatedAtTimeStamp())
                     this['updated_at'] = currTime;
 
-                return query.insert(this.constructor.getTableName(), this.getModelObject()).execute().then((result) => {
+                return query.insert(this.constructor.$getTableName(), this.getModelObject()).execute().then((result) => {
                     _this.setPK(result.insertId);
                     _this.setNew(false);
                     _this.afterInsert();
@@ -142,10 +146,10 @@ class Model {
         let _this = this;
         this.beforeUpdate();
 
-        if (this.constructor.hasUpdatedAtTimeStamp())
-            this['updated_at'] = Util.getCurrMysqlDateTime();
+        if (this.constructor.$enableUpdatedAtTimeStamp())
+            this['updated_at'] = Util.$getCurrMysqlDateTime();
 
-        return query.update(this.constructor.getTableName(), this.getModelObject()).execute().then((updateResult) => {
+        return query.update(this.constructor.$getTableName(), this.getModelObject()).execute().then((updateResult) => {
             resolve(updateResult);
             _this.afterUpdate();
         }).catch((updateErr) => {
@@ -153,26 +157,56 @@ class Model {
         });
     }
 
+    $update() {
+
+    }
+
     delete() {
         return (new MaskDBQuery())
             .delete()
-            .from(this.constructor.getTableName())
-            .where([this.constructor.getPKColumnName(), '=', this[this.constructor.getPKColumnName()]]);
+            .from(this.constructor.$getTableName())
+            .where([this.constructor.$getPKColumnName(), '=', this[this.constructor.$getPKColumnName()]])
+            .execute();
     }
 
-    static find(condition) {
+    $delete(conditions) {
+        let q = new MaskDBQuery();
+        let qFrom = q.delete()
+            .from(this.constructor.$getTableName());
+
+        if (typeof conditions === 'number') {
+            return qFrom.where([this.constructor.$getPKColumnName(), '=', conditions]);
+        } else if (typeof conditions === 'object' && conditions.length > 0) {
+            let qWhere = qFrom;
+            for (var i = 0; i < conditions; i++) {
+                qWhere = qWhere.where([conditions[i][0], conditions[i][1], conditions[i][2]]);
+            }
+
+            return qWhere.execute();
+        }
+        
+        return null;
+    }
+
+    static $find(condition) {
         if (typeof condition === 'number') {
-            return (new MaskDBQuery()).select().from(this.getTableName()).where(whr).execute().then((result) => {
-                if (bind) {
-                    let model = new this.constructor();
-                    model._bindModelObjectProperties(result);
-                    return model;
-                } else {
-                    return result;
-                }
-            }).catch((err) => {
-                console.log(err);
-            });
+            let whr = [this.constructor.$getPKColumnName(), '=', condition];
+            return (new MaskDBQuery())
+                .select()
+                .from(this.$getTableName())
+                .where(whr)
+                .execute()
+                .then((result) => {
+                    if (bind) {
+                        let model = new this.constructor();
+                        model._bindModelObjectProperties(result);
+                        return model;
+                    } else {
+                        return result;
+                    }
+                }).catch((err) => {
+                    console.log(err);
+                });
         } else {
             return (new MaskDBQuery());
         }

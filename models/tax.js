@@ -5,11 +5,11 @@ const { MaskDBQuery } = absRequire('core/db/query');
 
 class Tax extends Model {
 
-    static getTableName() {
+    static $getTableName() {
         return config['db']['table_prefix'] + config['db']['table']['tax'];
     }
 
-    static schema() {
+    static $schema() {
         return {
             name: {
                 required: true,
@@ -25,7 +25,7 @@ class Tax extends Model {
         };
     }
 
-    static columns() {
+    static $columns() {
         return [
             'name',
             'slug'
@@ -35,7 +35,7 @@ class Tax extends Model {
     static isCatIDInputValid(catIDs) {
         let catIDsArr = catIDs.split(',');
         for (var i = 0; i < catIDsArr.length; i++) {
-            if (Util.containsNonNumberCharacter(catIDsArr[i]))
+            if (Util.$containsNonNumberCharacter(catIDsArr[i]))
                 return false;
         }
 
@@ -45,10 +45,10 @@ class Tax extends Model {
     static getTerms(tax) {
         let q = new MaskDBQuery();
         let { TaxTerms } = absRequire('models/tax-terms');
-        let taxTbl = Tax.getTableName();
-        let taxTermsTbl = TaxTerms.getTableName();
-        let taxTblPK = Tax.getPKColumnName();
-        let taxTermsTblPK = TaxTerms.getPKColumnName();
+        let taxTbl = Tax.$getTableName();
+        let taxTermsTbl = TaxTerms.$getTableName();
+        let taxTblPK = Tax.$getPKColumnName();
+        let taxTermsTblPK = TaxTerms.$getPKColumnName();
 
         return q.select([taxTermsTbl + '.' + taxTblPK, taxTermsTbl + '.term', taxTermsTbl + '.slug'])
             .from(taxTbl)

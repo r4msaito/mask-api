@@ -41,16 +41,16 @@ router.post('/', [
             user_name: req.body.user_name,
             pass: req.body.pass
         };
-        let validation = Util.validateSchema(schema, model);
+        let validation = Util.$validateSchema(schema, model);
         if (!validation.valid) {
-            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
         } else {
             next();
         }
     }
 ], (req, res) => {
     let resp = {};
-    BcryptHelper.hashPassword(req.body.pass).then((passHash) => {
+    BcryptHelper.$hashPassword(req.body.pass).then((passHash) => {
         if (passHash.length === 60) {
             let user = new User();
             user.user_name = req.body.user_name;
@@ -61,22 +61,22 @@ router.post('/', [
                 user.save().then((result) => {
                     resp.status = constants.API_STATUS_SUCCESS;
                     resp.msg = 'Successfully registered';
-                    Util.die(res, resp, 200);
+                    Util.$die(res, resp, 200);
                 }).catch((err) => {
                     console.log(err);
                     resp.status = constants.API_STATUS_ERROR;
                     resp.msg = 'Problem in registration. Please try again later.';
-                    Util.die(res, resp, 500);
+                    Util.$die(res, resp, 500);
                 });
             } else {
                 resp.status = constants.API_STATUS_ERROR;
                 resp.msg = 'Data validation error.';
-                Util.die(res, resp, 200);
+                Util.$die(res, resp, 200);
             }
         } else {
             resp.status = constants.API_STATUS_ERROR;
             resp.msg = 'Problem in registering. Please try again later';
-            Util.die(res, resp, 200);
+            Util.$die(res, resp, 200);
         }
     }).catch((passHashErr) => {
         console.log(passHashErr);
@@ -119,9 +119,9 @@ router.post('/authenticate', [
             user_name: req.body.user_name,
             pass: req.body.pass
         };
-        let validation = Util.validateSchema(schema, model);
+        let validation = Util.$validateSchema(schema, model);
         if (!validation.valid) {
-            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
         } else {
             next();
         }
@@ -131,9 +131,9 @@ router.post('/authenticate', [
         token: ''
     };
     let statusCode = 200;
-    User.tryLoggingIn(req.body.user_name, req.body.pass).then((canLogin) => {
+    User.$tryLoggingIn(req.body.user_name, req.body.pass).then((canLogin) => {
         if (canLogin) {
-            let token = JWTAuthenticator.genJWT({
+            let token = JWTAuthenticator.$genJWT({
                 currentUserID: canLogin.id,
                 user_name: canLogin['user_name']
             });
@@ -141,7 +141,7 @@ router.post('/authenticate', [
             resp.msg = 'Successfully logged in!';
             resp.token = token;
 
-            Util.die(res, resp, statusCode);
+            Util.$die(res, resp, statusCode);
         }
     }).catch((tryLoggingInErr) => {
         console.log(tryLoggingInErr);
@@ -172,9 +172,9 @@ router.get('/exists', [
             },
         };
         let model = {};
-        let validation = Util.validateSchema(schema, model);
+        let validation = Util.$validateSchema(schema, model);
         if (!validation.valid) {
-            Util.die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
         } else {
             next();
         }
@@ -185,18 +185,18 @@ router.get('/exists', [
         msg: 'User does not exist'
     };
 
-    User.findUserByUserName(req.body.user_name).then((result) => {
+    User.$findUserByUserName(req.body.user_name).then((result) => {
         resp.status = constants.API_STATUS_SUCCESS;
         if (result.length > 0) {
             resp.found = true;
             resp.msg = 'User is present';
-            return Util.die(res, resp, 200);
+            return Util.$die(res, resp, 200);
         }
 
-        return Util.die(res, resp, 200);
+        return Util.$die(res, resp, 200);
     }).catch((err) => {
         console.log(err);
-        Util.die(res, resp, 500);
+        Util.$die(res, resp, 500);
     });
 });
 

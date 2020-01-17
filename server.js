@@ -49,7 +49,7 @@ app.use('/api/story', require('./api/story'));
  */
 
 app.use((req, resp) => {
-    return Util.die(resp, { status: 'error', msg: 'The resource you are trying to access does not exist' }, 404);
+    return Util.$die(resp, { status: 'error', msg: 'The resource you are trying to access does not exist' }, 404);
 });
 
 //Main listening port

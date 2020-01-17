@@ -93,9 +93,7 @@ class MaskDBQuery {
             return this;
 
         let q = '';
-        if (condition[3] === undefined || !condition[3])
-            q += 'WHERE ';
-
+        q = (condition[3] === undefined || !condition[3]) ? 'WHERE ' : condition[3] + ' ';
         q += condition[0] + condition[1] + '? ';
         this.appendParams(condition[2]);
         this.appendQuery(q);
@@ -136,6 +134,8 @@ class MaskDBQuery {
         let q = this.getQuery();
         let p = this.getParams();
         this._clearQueryParams();
+
+        console.log('query: ' + q);
 
         return new Promise((resolve, reject) => {
             maskDBConnection.query(q, p, (err, result) => {
