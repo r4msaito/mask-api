@@ -61,13 +61,28 @@ class MaskDBQuery {
         return this;
     }
 
-    update(table, columns) {
+    update(table, columns, where) {
         let columnsKeysArr = Object.keys(columns);
-        this.query += 'UPDATE ' + table + ' ';
+        this.appendQuery('UPDATE ' + table + ' SET ');
 
         for (var i = 0; i < columnsKeysArr.length; i++) {
-            this.appendQuery(columnsKeysArr[i] + '=?');
+            this.appendQuery(columnsKeysArr[i] + '=? ');
             this.appendParams(columns[columnsKeysArr[i]]);
+        }
+
+        if (where) {
+            let whereKeysArr = Object.keys(where);
+            if (whereKeysArr.length) {
+                this.appendQuery('WHERE ');
+                for (var i = 0; i < whereKeysArr.length; i++) {
+                    this.appendQuery(whereKeysArr[i] + '=?');
+
+                    if (i > 0)
+                        this.appendQuery(' AND ');
+
+                    this.appendParams(where[whereKeysArr[i]]);
+                }
+            }
         }
 
         return this;
@@ -126,16 +141,25 @@ class MaskDBQuery {
 
     raw(query) {
         this.appendQuery(query);
-        this.setParams([])
+        this.setParams([]);
         return this;
+    }
+
+    transaction() {
+        return new Promise((resolve, reject) => {
+            return maskDBConnection.beginTransaction((err) => {
+                if (err)
+                    reject('transaction connection error');
+                
+                
+            });
+        });
     }
 
     execute() {
         let q = this.getQuery();
         let p = this.getParams();
         this._clearQueryParams();
-
-        console.log('query: ' + q);
 
         return new Promise((resolve, reject) => {
             maskDBConnection.query(q, p, (err, result) => {

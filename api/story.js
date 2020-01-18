@@ -118,7 +118,10 @@ router.get('/cats', [], (req, res) => {
         })
         .catch((err) => {
             console.log(err);
-            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: 'Problem in retrieving categories. Please try again later' }, 500);
+            Util.$die(res, {
+                status: constants.API_STATUS_ERROR,
+                msg: 'Problem in retrieving categories. Please try again later'
+            }, 500);
         });
 });
 
@@ -137,15 +140,15 @@ router.post('/react', [
                 type: 'int',
                 max: constants.MYSQL_UNSIGNED_INT_LIMIT
             },
-            react_type: {
+            reaction_type: {
                 required: true,
-                in: EntityReaction.$getAllowedReactTypes()
+                in: EntityReaction.$getAllowedReactionTypes()
             }
         };
 
         let model = {
             story_id: req.body.story_id,
-            react_type: req.body.react_type
+            reaction_type: req.body.reaction_type
         };
 
         let validation = Util.$validateSchema(schema, model);
@@ -156,15 +159,103 @@ router.post('/react', [
         }
     }
 ], (req, res) => {
-    EntityReaction.$react(req.body.story_id, req.jwtData.currentUserID, EntityReaction.REACT_ENTITY_STORY, req.body.react_type)
-    .then((result) => {
-        console.log('inside result');
-        console.log(result);
+    EntityReaction.$react(req.body.story_id, req.jwtData.currentUserID, EntityReaction.REACT_ENTITY_STORY, req.body.reaction_type)
+        .then((result) => {
+            Util.$die(res, { status: constants.API_STATUS_SUCCESS, msg: 'Successfully reacted' }, 200);
+        }).catch((err) => {
+            console.log(err);
+            Util.$die(res, {
+                status: constants.API_STATUS_ERROR,
+                msg: 'There was a problem in reacting to the story. Please try again later'
+            }, 500);
+        });
+});
+
+
+/*
+ * Remove reaction
+ */
+
+router.delete('/react', [
+    JWTAuthenticator.$authenticate,
+    (req, res, next) => {
+        req.body.reaction_id = parseInt(req.body.reaction_id);
+        let schema = {
+            reaction_id: {
+                required: true,
+                type: 'int',
+                max: constants.MYSQL_UNSIGNED_INT_LIMIT
+            }
+        };
+
+        let model = {
+            reaction_id: req.body.reaction_id
+        };
+
+        let validation = Util.$validateSchema(schema, model);
+        if (!validation.valid) {
+            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+        } else {
+            next();
+        }
+    }
+], (req, res) => {
+    EntityReaction.$removeReaction(req.body.reaction_id, EntityReaction.REACT_ENTITY_STORY).then((result) => {
+        Util.$die(res, { status: constants.API_STATUS_SUCCESS, msg: 'Reaction successfully deleted.' }, 200);
     }).catch((err) => {
-        console.log('inside error man');
         console.log(err);
+        Util.$die(res, {
+            status: constants.API_STATUS_ERROR,
+            msg: 'There was a problem in deleting the reaction. Please try again later'
+        }, 500);
     });
 });
 
+
+/*
+ * Get Reaction Count
+ */
+
+router.get('/react/count', [
+    JWTAuthenticator.$authenticate,
+    (req, res, next) => {
+        req.body.story_id = parseInt(req.body.story_id);
+        let schema = {
+            story_id: {
+                required: true,
+                type: 'int',
+                max: constants.MYSQL_UNSIGNED_INT_LIMIT
+            }
+        };
+
+        let model = {
+            story_id: req.body.story_id
+        };
+
+        let validation = Util.$validateSchema(schema, model);
+        if (!validation.valid) {
+            Util.$die(res, { status: constants.API_STATUS_ERROR, msg: validation.msg }, 400);
+        } else {
+            next();
+        }
+    }
+], (req, res) => {
+    EntityReaction.$getRectionCount(req.body.story_id, EntityReaction.REACT_ENTITY_STORY)
+        .then((count) => {
+            console.log(count);
+            Util.$die(res, {
+                status: constants.API_STATUS_SUCCESS,
+                msg: 'Reaction count fetched successfully.',
+                count: count
+            }, 200);
+        })
+        .catch((err) => {
+            console.log(err);
+            Util.$die(res, {
+                status: constants.API_STATUS_ERROR,
+                msg: 'There was a problem in fetching the count. Please try again later'
+            }, 500);
+        });
+});
 
 module.exports = router;

@@ -41,22 +41,19 @@ class EntityReaction extends Model {
         return true;
     }
 
-    static $enableUpdatedAtTimeStamp() {
-        return true;
-    }
-
-    static $getAllowedreactionTypes() {
+    static $getAllowedReactionTypes() {
         return [
-            EntityReaction.REACT_TYPE_LIKE
+            EntityReaction.REACT_TYPE_LIKE,
+            EntityReaction.REACT_TYPE_DISLIKE
         ];
     }
 
     static $react(entityID, userID, entityType, reactionType) {
-        return EntityReaction.$alreadyReacted(entityID, userID, entityType, reactionType)
+        return EntityReaction.$alreadyReacted(entityID, userID, entityType)
             .then((alreadyReacted) => {
                 if (alreadyReacted) {
                     if (alreadyReacted.reaction_type !== reactionType) {
-                        return EntityReaction.$alterReaction(alreadyReacted[$getPKColumnName()], reactionType);
+                        return EntityReaction.$alterReaction(alreadyReacted[EntityReaction.$getPKColumnName()], reactionType);
                     } else {
                         return true;
                     }
@@ -66,31 +63,30 @@ class EntityReaction extends Model {
             })
     }
 
-    static $alreadyReacted(entityID, userID, entityType, reactionType) {
-        return new Promise((resolve, reject) => {
-            return EntityReaction.$find()
-                .select([EntityReaction.$getPKColumnName(), 'reaction_type'])
-                .from(EntityReaction.$getTableName())
-                .where(['entity_id', '=', entityID])
-                .where(['user_id', '=', userID, 'AND'])
-                .where(['entity_type', '=', entityType, 'AND'])
-                .execute()
-                .then((reacted) => {
-                    if (reacted.length > 0) {
-                        resolve(reacted[0]);
-                    } else {
-                        resolve(false);
-                    }
-                })
-                .catch((err) => {
-                    console.log(err);
-                    reject(err);
-                })
-        });
+    static $alreadyReacted(entityID, userID, entityType) {
+        return EntityReaction.$find()
+            .select([EntityReaction.$getPKColumnName(), 'reaction_type'])
+            .from(EntityReaction.$getTableName())
+            .where(['entity_id', '=', entityID])
+            .where(['user_id', '=', userID, 'AND'])
+            .where(['entity_type', '=', entityType, 'AND'])
+            .execute()
+            .then((reacted) => {
+                if (reacted.length > 0) {
+                    return reacted[0];
+                } else {
+                    return false;
+                }
+            })
+            .catch((err) => {
+                return err;
+            });
     }
 
-    static $alterReaction(reactionID, reactionType) {
-        return EntityReaction.$update(reactionID, reactionType);
+    static $alterReaction(id, reactionType) {
+        let updateObj = {};
+        updateObj[EntityReaction.$getPKColumnName()] = id;
+        return EntityReaction.$update({ reaction_type: reactionType }, updateObj);
     }
 
     static $removeReaction(reactionID) {
@@ -98,20 +94,31 @@ class EntityReaction extends Model {
     }
 
     static $addReact(entityID, userID, entityType, reactionType) {
-        let react = new this.constructor();
-        react.entity_id = entityID;
-        react.user_id = userID;
-        react.react_type = reactionType;
-        react.entity_type = entityType;
-        return react.save();
+        let reaction = new EntityReaction();
+        reaction.entity_id = entityID;
+        reaction.user_id = userID;
+        reaction.reaction_type = reactionType;
+        reaction.entity_type = entityType;
+        return reaction.save();
     }
 
-    static $getRections(entityID, entityType) {
-
+    static $getRectionCount(entityID, entityType) {
+        return new Promise((resolve, reject) => {
+            return EntityReaction.$find()
+            .select(['COUNT(' + EntityReaction.$getPKColumnName() + ') as reaction_count'])
+            .from(EntityReaction.$getTableName())
+            .where(['entity_id', '=', entityID])
+            .where(['entity_type', '=', entityType, 'AND'])
+            .execute()
+            .then((result) => {
+                resolve(result[0]['reaction_count']);
+            });
+        });
     }
 }
 
 EntityReaction.REACT_TYPE_LIKE = 'like';
+EntityReaction.REACT_TYPE_DISLIKE = 'dislike';
 EntityReaction.REACT_ENTITY_STORY = 'story';
 
 module.exports.EntityReaction = EntityReaction;

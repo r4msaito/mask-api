@@ -157,8 +157,10 @@ class Model {
         });
     }
 
-    $update() {
-
+    static $update(updateFields, where) {
+        let q = new MaskDBQuery();
+        return q.update(this.$getTableName(), updateFields, where)
+        .execute();
     }
 
     delete() {
@@ -169,13 +171,13 @@ class Model {
             .execute();
     }
 
-    $delete(conditions) {
+    static $delete(conditions) {
         let q = new MaskDBQuery();
         let qFrom = q.delete()
-            .from(this.constructor.$getTableName());
-
+            .from(this.$getTableName());
+        
         if (typeof conditions === 'number') {
-            return qFrom.where([this.constructor.$getPKColumnName(), '=', conditions]);
+            return qFrom.where([this.$getPKColumnName(), '=', conditions]).execute();
         } else if (typeof conditions === 'object' && conditions.length > 0) {
             let qWhere = qFrom;
             for (var i = 0; i < conditions; i++) {
@@ -184,7 +186,7 @@ class Model {
 
             return qWhere.execute();
         }
-        
+
         return null;
     }
 
