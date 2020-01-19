@@ -49,14 +49,8 @@ class MaskDBQuery {
         return this;
     }
 
-    insert(table, columnValueMap) {
-        let columns = Object.keys(columnValueMap);
-        let values = Object.values(columnValueMap)
-        let valuesPlaceHolderArr = [];
-        for (var i = 0; i < values.length; i++)
-            valuesPlaceHolderArr.push('?');
-
-        this.appendQuery('INSERT INTO ' + table + ' (' + columns.join(',') + ') VALUES (' + valuesPlaceHolderArr.join(',') + ') ');
+    insert(table, columns, values) {
+        this.appendQuery('INSERT INTO ' + table + ' (' + columns.join(', ') + ') VALUES ? ');
         this.mergeParams(values);
         return this;
     }
@@ -162,7 +156,7 @@ class MaskDBQuery {
         this._clearQueryParams();
 
         return new Promise((resolve, reject) => {
-            maskDBConnection.query(q, p, (err, result) => {
+            return maskDBConnection.query(q, p, (err, result) => {
                 if (err)
                     reject(err);
 

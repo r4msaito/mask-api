@@ -1,7 +1,5 @@
 const { Model } = absRequire('core/model/model');
 const { config } = absRequire('config/master');
-const { Util } = absRequire('core/util');
-const { constants } = absRequire('core/constants');
 
 class EntityReaction extends Model {
 

@@ -1,8 +1,7 @@
 const { Model } = absRequire('core/model/model');
 const { config } = absRequire('config/master');
-const { Util } = absRequire('core/util');
 
-class Story extends Model {
+class StoryTerms extends Model {
 
     static $getTableName() {
         return config['db']['table_prefix'] + config['db']['table']['story_terms'];
@@ -30,16 +29,14 @@ class Story extends Model {
         ];
     }
 
-    addStoryTerms() {
-        
-    }
-    
-    refreshStoryTerms() {
+    static $addStoryTerms(story_id, term_ids) {
+        let values = [];
 
-    }
+        for (var i = 0; i < term_ids.length; i++)
+            values.push([story_id, term_ids[i]]);
+        
+        return StoryTerms.$save(StoryTerms.$columns(), values);
+    }    
 }
 
-Story.STATUS_PUBLISH = 'publish';
-Story.STATUS_HIDDEN = 'hidden';
-
-module.exports.Story = Story;
+module.exports.StoryTerms = StoryTerms;

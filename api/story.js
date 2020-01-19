@@ -47,11 +47,11 @@ router.post('/', [
         }
     }
 ], (req, res) => {
-    let story = new Story();
-    story.content = req.body.content;
-    story.author = req.jwtData.currentUserID;
-    story.status = Story.STATUS_PUBLISH;
-    story.save().then((result) => {
+    Story.$addStory({
+        content: req.body.content,
+        author: req.jwtData.currentUserID,
+        cats: req.body.story_cats
+    }).then((result) => {
         if (result.insertId) {
             Util.$die(res, { status: constants.API_STATUS_SUCCESS, msg: 'Your story is published.' }, 200);
         } else {
@@ -124,6 +124,18 @@ router.get('/cats', [], (req, res) => {
             }, 500);
         });
 });
+
+
+/*
+ * Update story cats
+ */
+
+router.patch('/cats', [
+        JWTAuthenticator.$authenticate,
+    ],
+    (req, res) => {
+
+    });
 
 
 /*

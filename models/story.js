@@ -1,6 +1,6 @@
 const { Model } = absRequire('core/model/model');
+const { StoryTerms } = absRequire('models/story-terms');
 const { config } = absRequire('config/master');
-const { Util } = absRequire('core/util');
 
 class Story extends Model {
 
@@ -43,8 +43,22 @@ class Story extends Model {
         return true;
     }
 
-    updateStory() {
+    static $addStory(story) {
+        let story = new Story();
+        story.content = story.content;
+        story.author = story.author;
+        story.status = Story.STATUS_PUBLISH;
+        story.save()
+            .then((result) => {
+                if (story.cats) {
+                    return StoryTerms.$addStoryTerms(result.insertId, story.cats);
+                }
 
+                return true;
+            })
+            .catch((err) => {
+                console.log(err);
+            });
     }
 }
 

@@ -73,6 +73,18 @@ class Model {
 
     }
 
+    static $_getColumns() {
+        let columns = this.$columns();
+
+        if (this.$enableCreatedAtTimeStamp())
+            columns.push('created_at');
+
+        if (this.$enableUpdatedAtTimeStamp())
+            columns.push('updated_at');
+
+        return columns;
+    }
+
     beforeInsert() {
 
     }
@@ -91,14 +103,9 @@ class Model {
 
     getModelObject() {
         let obj = {};
-        let columns = this.constructor.$columns();
+        let columns = this.constructor.$_getColumns();
         let pk = this.constructor.$getPKColumnName();
         obj[pk] = (this.hasOwnProperty(pk)) ? this[pk] : undefined;
-        if (this.constructor.$enableCreatedAtTimeStamp())
-            obj['created_at'] = (this.hasOwnProperty('created_at')) ? this['created_at'] : undefined;
-
-        if (this.constructor.$enableUpdatedAtTimeStamp())
-            obj['updated_at'] = (this.hasOwnProperty('created_at')) ? this['updated_at'] : undefined;
 
         for (var i = 0; i < columns.length; i++)
             obj[columns[i]] = this[columns[i]];
@@ -114,32 +121,49 @@ class Model {
     }
 
     save() {
-        //validate model
         return new Promise((resolve, reject) => {
             if (this._new) {
                 let _this = this;
                 let query = new MaskDBQuery();
                 this.beforeInsert();
                 let currTime = Util.$getCurrMysqlDateTime();
+                if (this.hasOwnProperty('created_at'))
+                    this.created_at = currTime;
 
-                if (this.constructor.$enableCreatedAtTimeStamp())
-                    this['created_at'] = currTime;
+                if (this.hasOwnProperty('updated_at'))
+                    this.updated_at = currTime;
 
-                if (this.constructor.$enableUpdatedAtTimeStamp())
-                    this['updated_at'] = currTime;
+                let columns = Object.keys(this.getModelObject());
+                let values = Object.values(this.getModelObject());
+                return query.insert(this.constructor.$getTableName(), columns, [
+                        [values]
+                    ])
+                    .execute()
+                    .then((result) => {
+                        _this.setPK(result.insertId);
+                        _this.setNew(false);
+                        _this.afterInsert();
+                        resolve(result);
+                    }).catch((err) => {
+                        if (this.hasOwnProperty('created_at'))
+                            this.created_at = '';
 
-                return query.insert(this.constructor.$getTableName(), this.getModelObject()).execute().then((result) => {
-                    _this.setPK(result.insertId);
-                    _this.setNew(false);
-                    _this.afterInsert();
-                    resolve(result);
-                }).catch((err) => {
-                    reject(err);
-                });
+                        if (this.hasOwnProperty('updated_at'))
+                            this.updated_at = '';
+
+                        reject(err);
+                    });
             } else {
                 return this.update();
             }
         });
+    }
+
+    static $save(columns, values) {
+        return (new MaskDBQuery()).insert(this.$getTableName(), columns, [
+                [values]
+            ])
+            .execute();
     }
 
     update() {
@@ -149,18 +173,20 @@ class Model {
         if (this.constructor.$enableUpdatedAtTimeStamp())
             this['updated_at'] = Util.$getCurrMysqlDateTime();
 
-        return query.update(this.constructor.$getTableName(), this.getModelObject()).execute().then((updateResult) => {
-            resolve(updateResult);
-            _this.afterUpdate();
-        }).catch((updateErr) => {
-            reject(updateErr);
-        });
+        return query.update(this.constructor.$getTableName(), this.getModelObject())
+            .execute()
+            .then((updateResult) => {
+                resolve(updateResult);
+                _this.afterUpdate();
+            }).catch((updateErr) => {
+                reject(updateErr);
+            });
     }
 
     static $update(updateFields, where) {
         let q = new MaskDBQuery();
         return q.update(this.$getTableName(), updateFields, where)
-        .execute();
+            .execute();
     }
 
     delete() {
@@ -175,7 +201,7 @@ class Model {
         let q = new MaskDBQuery();
         let qFrom = q.delete()
             .from(this.$getTableName());
-        
+
         if (typeof conditions === 'number') {
             return qFrom.where([this.$getPKColumnName(), '=', conditions]).execute();
         } else if (typeof conditions === 'object' && conditions.length > 0) {
@@ -216,8 +242,10 @@ class Model {
 
     _bindModelObjectProperties(properties) {
         let propertyKeys = Object.keys(properties);
-        for (var i = 0; i < propertyKeys; i++)
-            this[propertyKeys] = (properties[propertyKeys[i]]) ? properties[propertyKeys[i]] : '';
+        for (var i = 0; i < propertyKeys.length; i++)
+            this[propertyKeys[i]] = (properties[propertyKeys[i]]) ? properties[propertyKeys[i]] : '';
+
+        return this;
     }
 }
 
